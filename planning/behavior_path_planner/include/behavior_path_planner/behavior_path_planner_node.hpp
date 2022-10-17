@@ -42,6 +42,8 @@
 #include <tier4_planning_msgs/msg/path_change_module.hpp>
 #include <tier4_planning_msgs/msg/scenario.hpp>
 
+#include <odd_visualizer/odd_visualizer_msgs/utils_msgs/msg/laneSequenceWithID.hpp>
+
 #include <memory>
 #include <mutex>
 #include <string>
@@ -96,6 +98,9 @@ private:
   rclcpp::Publisher<Path>::SharedPtr path_candidate_publisher_;
   rclcpp::Publisher<TurnIndicatorsCommand>::SharedPtr turn_signal_publisher_;
   rclcpp::Publisher<HazardLightsCommand>::SharedPtr hazard_signal_publisher_;
+  
+  rclcpp::Publisher<>::SharedPtr lanelet_ID_publisher_;
+
   rclcpp::TimerBase::SharedPtr timer_;
 
   std::shared_ptr<PlannerData> planner_data_;
