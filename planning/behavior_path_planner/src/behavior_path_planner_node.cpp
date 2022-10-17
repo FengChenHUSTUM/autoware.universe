@@ -634,6 +634,12 @@ void BehaviorPathPlannerNode::run()
     const auto drivable_area_lines = marker_utils::createFurthestLineStringMarkerArray(
       util::getDrivableAreaForAllSharedLinestringLanelets(planner_data));
     debug_drivable_area_lanelets_publisher_->publish(drivable_area_lines);
+
+    lanelet::ConstLanelet current_lane;
+    route_handler->getClosestLaneletWithinRoute(planner_data->self_pose->pose, &current_lane);
+    const auto current_lanes = route_handler->getLaneletSequence(
+    current_lane, planner_data->self_pose->pose, p.backward_path_length, p.forward_path_length);
+    // TODO: extract ID of the lanelets and publish them
   }
 
   mutex_bt_.unlock();
