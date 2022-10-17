@@ -635,11 +635,13 @@ void BehaviorPathPlannerNode::run()
       util::getDrivableAreaForAllSharedLinestringLanelets(planner_data));
     debug_drivable_area_lanelets_publisher_->publish(drivable_area_lines);
 
-    lanelet::ConstLanelet current_lane;
-    route_handler->getClosestLaneletWithinRoute(planner_data->self_pose->pose, &current_lane);
-    const auto current_lanes = route_handler->getLaneletSequence(
-    current_lane, planner_data->self_pose->pose, p.backward_path_length, p.forward_path_length);
-    // TODO: extract ID of the lanelets and publish them
+    // lanelet::ConstLanelet current_lane;
+    // const auto & tmp_route_handler = planner_data->route_handler;
+
+    // std::vector<int64_t> IDs = odd_tools::getLaneletIDsfromSequence(current_lane, 
+    //   tmp_route_handler, planner_data_->self_pose->pose);
+
+    // //TODO: add publisher here
   }
 
   mutex_bt_.unlock();
