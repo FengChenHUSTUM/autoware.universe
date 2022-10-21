@@ -1,0 +1,9 @@
+#include "scenery_msgs/msg/regulatoryElePrimitive.idl"
+
+module scenery_msgs {
+    module msg {
+        struct RegulatoryEleData {
+            sequence<string> dataBase;
+        };
+    };
+};

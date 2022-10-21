@@ -1,0 +1,13 @@
+#include "std_msgs/msg/Header.idl"
+
+module scenery_msgs {
+    module msg {
+        module RegulatoryElements_Constants {
+            const uint8 trafficLights = 0;
+        };
+        struct RegulatoryElePrimitive {
+            int64 RegulationID;
+            uint8 RegulationType;
+        };
+    };
+};

@@ -1,0 +1,9 @@
+#include "scenery_msgs/msg/edgePrimitive.idl"
+
+module scenery_msgs {
+    module msg {
+        struct EgeData {
+            sequence<string> dataBase;
+        };
+    };
+};

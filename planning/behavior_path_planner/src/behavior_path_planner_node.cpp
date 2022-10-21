@@ -73,6 +73,10 @@ BehaviorPathPlannerNode::BehaviorPathPlannerNode(const rclcpp::NodeOptions & nod
       create_publisher<MarkerArray>("~/drivable_area_boundary", 1);
   }
 
+  // TODO: Uncomment the following code and merge it into the repo on gitlab
+  lanelet_ID_publisher_ = create_publisher<laneSequenceWithID>
+                          ("odd_visualizer/lanelet_sequence_IDs", 1);
+
   // subscriber
   velocity_subscriber_ = create_subscription<Odometry>(
     "~/input/odometry", 1, std::bind(&BehaviorPathPlannerNode::onVelocity, this, _1),
@@ -634,14 +638,23 @@ void BehaviorPathPlannerNode::run()
     const auto drivable_area_lines = marker_utils::createFurthestLineStringMarkerArray(
       util::getDrivableAreaForAllSharedLinestringLanelets(planner_data));
     debug_drivable_area_lanelets_publisher_->publish(drivable_area_lines);
-
-    // lanelet::ConstLanelet current_lane;
-    // const auto & tmp_route_handler = planner_data->route_handler;
+    
+    // TODO: Uncomment the following code and merge it into the repo on gitlab
+    scenery_msgs::msg::laneSequenceWithID lane_IDs_msg;
+    
+    lanelet::ConstLanelet current_lane; 
+    planner_data->route_handler->getClosestLaneletWithinRoute(
+      planner_data_->self_pose->pose, &current_lane);
+    const std::vector<lanelet::ConstLanelet> current_lanes = planner_data->route_handler->getLaneletSequence(
+    current_lane, planner_data_->self_pose->pose, 20, 10);
+    for(long unsigned int i = 0; i < current_lanes.size(); ++i) {
+        lane_IDs_msg.lane_ids.push_back(current_lanes[i].id());
+    }
 
     // std::vector<int64_t> IDs = odd_tools::getLaneletIDsfromSequence(current_lane, 
     //   tmp_route_handler, planner_data_->self_pose->pose);
 
-    // //TODO: add publisher here
+    lanelet_ID_publisher_->publish(lane_IDs_msg);
   }
 
   mutex_bt_.unlock();

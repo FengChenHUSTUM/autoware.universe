@@ -42,7 +42,7 @@
 #include <tier4_planning_msgs/msg/path_change_module.hpp>
 #include <tier4_planning_msgs/msg/scenario.hpp>
 
-#include <odd_visualizer/odd_visualizer_msgs/utils_msgs/msg/laneSequenceWithID.hpp>
+#include <scenery_msgs/msg/lane_sequence_with_id.hpp>
 
 #include <memory>
 #include <mutex>
@@ -81,6 +81,8 @@ using tier4_planning_msgs::msg::PathChangeModule;
 using tier4_planning_msgs::msg::Scenario;
 using visualization_msgs::msg::MarkerArray;
 
+using scenery_msgs::msg::laneSequenceWithID;
+
 class BehaviorPathPlannerNode : public rclcpp::Node
 {
 public:
@@ -99,7 +101,8 @@ private:
   rclcpp::Publisher<TurnIndicatorsCommand>::SharedPtr turn_signal_publisher_;
   rclcpp::Publisher<HazardLightsCommand>::SharedPtr hazard_signal_publisher_;
   
-  rclcpp::Publisher<>::SharedPtr lanelet_ID_publisher_;
+  // TODO: Uncomment the following code and merge it into the repo on gitlab
+  rclcpp::Publisher<laneSequenceWithID>::SharedPtr lanelet_ID_publisher_;
 
   rclcpp::TimerBase::SharedPtr timer_;
 
