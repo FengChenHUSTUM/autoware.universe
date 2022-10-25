@@ -1,5 +1,6 @@
 <launch>
 
-  <node pkg="odd_visualizer" exec="odd_visualizer_node" name="odd_visualizer">
+  <node pkg="odd_visualizer_node" exec="odd_visualizer_node" name="odd_visualizer_node">
+    <param from="$(find-pkg-share odd_visualizer_node)/config/odd_params.yaml"/>
   </node>
 </launch>

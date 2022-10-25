@@ -31,8 +31,8 @@ namespace odd_tools
         float a = 1.0;
     };
     struct tuning_params {
-        double forward_path_length = 20;
-        double backward_path_length = 10;
+        float forward_path_length = 20.0;
+        float backward_path_length = 10.0;
         odd_colorRGBA odd_rgba{};
     };
     struct ODD_elements {

@@ -6,7 +6,7 @@ OddVisualizer::OddVisualizer(
 : Node(node_name, node_options), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
 
     odd_elements_ = std::make_shared<odd_tools::ODD_elements>();
-    // *odd_elements_ = getParam();
+    *odd_elements_ = getParam();
     //TODO: edit topic path in configuration file
     std::cout << "odd node loaded! "<<'\n';
     odd_driveable_area_publisher_ = 
@@ -44,6 +44,7 @@ std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(odd_tools::odd_colorRGBA
 }
 
 void OddVisualizer::getColorConfig(odd_tools::odd_colorRGBA &odd_color) {
+  RCLCPP_INFO(get_logger(), "Get Params Func Called!");
   odd_color.r = declare_parameter<float>("color_rgba_r");
   odd_color.g = declare_parameter<float>("color_rgba_g");
   odd_color.b = declare_parameter<float>("color_rgba_b");
@@ -54,6 +55,10 @@ void OddVisualizer::getColorConfig(odd_tools::odd_colorRGBA &odd_color) {
 odd_tools::ODD_elements OddVisualizer::getParam() {
   odd_tools::ODD_elements elements{};
   getColorConfig(elements.params.odd_rgba);
+  RCLCPP_INFO(get_logger(), "color_rgba_r: %f", elements.params.odd_rgba.r);
+  RCLCPP_INFO(get_logger(), "color_rgba_g: %f", elements.params.odd_rgba.g);
+  RCLCPP_INFO(get_logger(), "color_rgba_b: %f", elements.params.odd_rgba.b);
+  RCLCPP_INFO(get_logger(), "color_rgba_a: %f", elements.params.odd_rgba.a);
   return elements;
 }
 
@@ -110,15 +115,15 @@ MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLin
   if (linestrings.empty()) {
     return MarkerArray();
   }
-  std_msgs::msg::ColorRGBA colorconfig;
-  colorconfig.r = 34;
-  colorconfig.g = 114;
-  colorconfig.b = 227;
-  colorconfig.a = 0.9;
+  // std_msgs::msg::ColorRGBA colorconfig;
+  // colorconfig.r = 34;
+  // colorconfig.g = 114;
+  // colorconfig.b = 227;
+  // colorconfig.a = 0.9;
   Marker marker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0L, Marker::LINE_STRIP,
-    // createMarkerScale(0.3, 0.0, 0.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
-    createMarkerScale(0.3, 0.0, 0.0), colorconfig);
+    createMarkerScale(0.3, 0.0, 0.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+    // createMarkerScale(0.3, 0.0, 0.0), colorconfig);
   marker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
 
   const auto reserve_size = linestrings.size() / 2;

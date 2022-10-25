@@ -9,8 +9,8 @@ src/odd_visualizer_node.cpp
 src/utils.cpp
 src/main.cpp)
 
-
 ament_auto_package(
-    INSTALL_TO_SHARE
-    launch
+  INSTALL_TO_SHARE
+  launch
+  config
 )

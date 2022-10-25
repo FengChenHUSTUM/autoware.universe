@@ -35,5 +35,5 @@ ODDPparameter
 
 # Build the package alone
 ```shell
-colcon build --packages-up-to odd_visualizer_node
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-up-to odd_visualizer_node
 ```
