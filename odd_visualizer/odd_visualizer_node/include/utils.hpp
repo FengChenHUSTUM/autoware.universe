@@ -8,6 +8,7 @@
 #include <lanelet2_core/primitives/Lanelet.h>
 #include <lanelet2_core/primitives/BasicRegulatoryElements.h>
 #include <lanelet2_core/LaneletMap.h>
+#include <lanelet2_core/geometry/GeometryHelper.h>
 #include <lanelet2_extension/utility/message_conversion.hpp>
 #include <lanelet2_extension/utility/query.hpp>
 #include <lanelet2_extension/utility/utilities.hpp>
@@ -20,7 +21,7 @@
 #include <lanelet2_routing/RoutingGraphContainer.h>
 
 #include <route_handler/route_handler.hpp>
-
+#include <tier4_autoware_utils/ros/self_pose_listener.hpp>
 
 namespace odd_tools
 {
@@ -37,8 +38,7 @@ namespace odd_tools
     };
     struct ODD_elements {
         tuning_params params{};
-        // PoseStamped::ConstSharedPtr self_pose{};
-
+        geometry_msgs::msg::PoseStamped::ConstSharedPtr self_pose{};
     };
     std::vector<int64_t> getLaneletIDsfromSequence(
         lanelet::ConstLanelet& current_lane,
@@ -71,6 +71,29 @@ namespace odd_tools
         const lanelet::ConstLanelet & lanelet,
          lanelet::routing::RoutingGraphPtr routing_graph_ptr_,
          lanelet::LaneletMapPtr lanelet_map_ptr_);
+
+    // Geometry functions
+    struct BoundaryInfo {
+        size_t laneletIdx{0};
+        size_t pointIdx{0};
+    };
+    BoundaryInfo getRightBoundaryLineString(
+        const lanelet::ConstLanelets laneletSequence,
+        const geometry_msgs::msg::Pose & pose,
+        const double forwardLength,
+        const double backwardLength);
+
+    int getCurrentLaneletPosition(const lanelet::ConstLanelets & laneletSequence, 
+                                   const geometry_msgs::msg::Pose & currentPose,
+                                   lanelet::ConstLanelet & currentLanelet);
+
+    inline lanelet::ConstPoint3d toLaneletPoint(const geometry_msgs::msg::Point & pose)
+    {
+        return lanelet::Point3d(lanelet::InvalId, pose.x, pose.y, pose.z);
+    }
+    // lanelet::ArcCoordinates getArcCoordinates(
+    //     const lanelet::ConstLanelets & laneletSequence,
+    //     const geometry_msgs::msg::Pose & pose);
 } // namespace odd_tools
 
 #endif

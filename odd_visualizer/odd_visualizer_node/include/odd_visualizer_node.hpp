@@ -84,7 +84,7 @@ private:
     // rclcpp::Publisher<LaneData>::SharedPtr odd_roadLane_publisher_;
     // rclcpp::Publisher<RegulatoryEleData>::SharedPtr odd_regulatory_elements_publisher_;
 
-    // tier4_autoware_utils::SelfPoseListener self_pose_listener_{this};
+    tier4_autoware_utils::SelfPoseListener self_pose_listener_{this};
 
 
     // ROS node
@@ -142,6 +142,8 @@ private:
     // void getCurrentLane();
 
     MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings);
+    MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings,
+                                              const odd_tools::BoundaryInfo & boundaryInfo);
 
     std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
     void getColorConfig(odd_tools::odd_colorRGBA &odd_color);

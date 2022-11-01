@@ -134,4 +134,106 @@ namespace odd_tools
         return {};
     }
 
+    BoundaryInfo getRightBoundaryLineString(
+        const lanelet::ConstLanelets laneletSequence,
+        const geometry_msgs::msg::Pose & pose,
+        const double forwardLength,
+        const double backwardLength)
+    {
+        std::cout << "forward: " << forwardLength << "; backward: " << backwardLength << '\n';
+
+        lanelet::ConstLanelet currentLanelet;
+        int curLaneletPosition = getCurrentLaneletPosition(laneletSequence, pose, currentLanelet);
+        if (curLaneletPosition == -1) {
+            return {};
+        }
+        double curLength = 0;
+
+        // current position of the ego
+        const auto poseLanelet = toLaneletPoint(pose.position);
+
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto projectedPoint = lanelet::geometry::internal::signedDistanceImpl(curCenterLine, poseLanelet.basicPoint2d()).second;
+
+        // find the corrsponding projected point of the current pose on the centerline
+        auto iterStartPoint = curCenterLine.begin();
+        for (auto itPoint = curCenterLine.begin(); itPoint != curCenterLine.end(); ++itPoint) {
+            if (boost::geometry::equals(projectedPoint.result->segmentPoint1, itPoint->basicPoint2d())) {
+                iterStartPoint = itPoint;
+                // std::cout << "这样找点确实可以, point id: " << itPoint->id()<<'\n';
+                break;
+            }
+        }
+
+        // find the furtherest point on the centerline with respect to the fixed forward length
+        // lanelet::ConstPoint2d::BasicPoint furtherstPoint;
+        // lanelet::ConstLanelet furtherstLanelet;
+
+        size_t furtherstLaneletIdx = 0;
+        size_t furtherstPointIdx = 0;
+
+        for (auto & itPoint = iterStartPoint; itPoint != curCenterLine.end(); ++itPoint){
+            //check if the accumulate length in current lanelet has exceeded the fix forward length
+            if (itPoint != curCenterLine.begin()) {
+                curLength += lanelet::geometry::distance(itPoint->basicPoint2d(), (itPoint - 1)->basicPoint2d());
+            }
+            if (curLength >= forwardLength) {
+
+                // furtherstPoint = itPoint->basicPoint();
+                // furtherstLanelet = currentLanelet;
+                furtherstLaneletIdx = curLaneletPosition;
+                // TODO: get the projected point of the furtherest point on the right and left boundary
+                const auto rightProjection = lanelet::geometry::internal::signedDistanceImpl(currentLanelet.rightBound2d(), poseLanelet.basicPoint2d()).second;
+                for (auto rightPoint = currentLanelet.rightBound2d().begin();
+                     !boost::geometry::equals(rightProjection.result->segmentPoint1, rightPoint->basicPoint2d());
+                     ++rightPoint)
+                {
+                    furtherstPointIdx++;
+                }
+                return {furtherstLaneletIdx, furtherstPointIdx};
+            }
+        }
+
+        // if the the accumulate length is shorter than the fixed length, continue the above process
+        // in the following lanlets in the sequence
+        
+        for (auto itLanlet = laneletSequence.begin() + curLaneletPosition + 1;
+            itLanlet != laneletSequence.end(); ++itLanlet)
+        {   
+            const auto centerLine = lanelet::utils::to2D(itLanlet->centerline());
+            furtherstLaneletIdx++;
+            furtherstPointIdx = 0;
+            for (auto itPoint = centerLine.begin() + 1; itPoint != centerLine.end(); ++itPoint) {
+                curLength += lanelet::geometry::distance(itPoint->basicPoint2d(), (itPoint - 1)->basicPoint2d());
+                if (curLength >= forwardLength) {
+                    const auto rightProjection = lanelet::geometry::internal::signedDistanceImpl(itLanlet->rightBound2d(), itPoint->basicPoint2d()).second;
+                    for (auto rightPoint = itLanlet->rightBound2d().begin();
+                        !boost::geometry::equals(rightProjection.result->segmentPoint1, rightPoint->basicPoint2d());
+                        ++rightPoint)
+                    {
+                        furtherstPointIdx++;
+                    }
+                    return {furtherstLaneletIdx, furtherstPointIdx};
+                }
+            }
+        }
+        // std::cout << "最远点坐标： x = "<<furtherstPoint.x() << "; y = " << furtherstPoint.y() << '\n';
+        return {};
+    }
+    
+    int getCurrentLaneletPosition(const lanelet::ConstLanelets & laneletSequence, 
+                                  const geometry_msgs::msg::Pose & currentPose,
+                                  lanelet::ConstLanelet & currentLanelet) 
+    {
+        lanelet::BasicPoint2d curPoint(currentPose.position.x, currentPose.position.y);
+        for (size_t i = 0; i < laneletSequence.size(); ++i) {
+            if (lanelet::geometry::inside(laneletSequence[i], curPoint)) {
+                currentLanelet = laneletSequence[i];
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
 } // namespace odd_tools

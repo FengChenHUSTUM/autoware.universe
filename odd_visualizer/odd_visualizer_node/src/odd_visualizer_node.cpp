@@ -5,6 +5,7 @@ OddVisualizer::OddVisualizer(
     const std::string& node_name, const rclcpp::NodeOptions & node_options) 
 : Node(node_name, node_options), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
 
+    setvbuf(stdout, NULL, _IONBF, BUFSIZ);
     odd_elements_ = std::make_shared<odd_tools::ODD_elements>();
     *odd_elements_ = getParam();
     //TODO: edit topic path in configuration file
@@ -44,7 +45,7 @@ std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(odd_tools::odd_colorRGBA
 }
 
 void OddVisualizer::getColorConfig(odd_tools::odd_colorRGBA &odd_color) {
-  RCLCPP_INFO(get_logger(), "Get Params Func Called!");
+  // RCLCPP_INFO(get_logger(), "Get Params Func Called!");
   odd_color.r = declare_parameter<float>("color_rgba_r");
   odd_color.g = declare_parameter<float>("color_rgba_g");
   odd_color.b = declare_parameter<float>("color_rgba_b");
@@ -55,10 +56,6 @@ void OddVisualizer::getColorConfig(odd_tools::odd_colorRGBA &odd_color) {
 odd_tools::ODD_elements OddVisualizer::getParam() {
   odd_tools::ODD_elements elements{};
   getColorConfig(elements.params.odd_rgba);
-  RCLCPP_INFO(get_logger(), "color_rgba_r: %f", elements.params.odd_rgba.r);
-  RCLCPP_INFO(get_logger(), "color_rgba_g: %f", elements.params.odd_rgba.g);
-  RCLCPP_INFO(get_logger(), "color_rgba_b: %f", elements.params.odd_rgba.b);
-  RCLCPP_INFO(get_logger(), "color_rgba_a: %f", elements.params.odd_rgba.a);
   return elements;
 }
 
@@ -82,7 +79,10 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
         laneletSequence[i++] = lanelet_map_ptr_->laneletLayer.get(laneID);
     }
     current_lanelets_ = laneletSequence;
+    odd_elements_->self_pose = self_pose_listener_.getCurrentPose();
+    const auto pose = odd_elements_->self_pose->pose;
     creareDrivableBoundaryMarkerArray(current_lanelets_);
+    odd_tools::getRightBoundaryLineString(laneletSequence, pose, 200, 20);
 }
 void OddVisualizer::creareDrivableBoundaryMarkerArray(
     const lanelet::ConstLanelets laneletSequence) {
@@ -108,6 +108,28 @@ void OddVisualizer::creareDrivableBoundaryMarkerArray(
                                  linestrings.end());
     } 
     const auto drivable_area_lines = createDrivableAreaMarkerArray(linestring_shared);
+
+
+    odd_tools::BoundaryInfo boundaryInfo_ = odd_tools::getRightBoundaryLineString(laneletSequence,
+                                                                                  odd_elements_->self_pose->pose,
+                                                                                  odd_elements_->params.forward_path_length,
+                                                                                  odd_elements_->params.backward_path_length);
+    lanelet::ConstLineStrings3d lineStringBoundary;
+    for (auto curLanelet = laneletSequence.begin();
+        curLanelet != laneletSequence.begin() + boundaryInfo_.laneletIdx;
+        ++curLanelet) {
+      lanelet::ConstLineStrings3d linestrings;
+      linestrings.reserve(2);
+      linestrings.emplace_back(curLanelet->rightBound3d());
+      linestrings.emplace_back(curLanelet->leftBound3d());
+      lineStringBoundary.insert(lineStringBoundary.end(),
+                                linestrings.begin(),
+                                linestrings.end());
+    }
+    
+    
+    const auto drivableBoundaryMSG = createDrivableAreaMarkerArray(lineStringBoundary, boundaryInfo_);
+    // odd_driveable_area_publisher_->publish(drivable_area_lines);
     odd_driveable_area_publisher_->publish(drivable_area_lines);
 }
 
@@ -186,6 +208,111 @@ MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLin
       (isFrontFurther) ? idx->basicLineString() : idx->invert().basicLineString();
     for (auto ls = right_ls.crbegin(); ls != right_ls.crend(); ++ls) {
       marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
+    }
+  }
+
+  if (!marker.points.empty()) {
+    marker.points.push_back(marker.points.front());
+  }
+
+  MarkerArray msg;
+
+  msg.markers.push_back(marker);
+  return msg;
+}
+MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings,
+                                                         const odd_tools::BoundaryInfo & boundaryInfo_) {
+  if (linestrings.empty()) {
+    return MarkerArray();
+  }
+  // std_msgs::msg::ColorRGBA colorconfig;
+  // colorconfig.r = 34;
+  // colorconfig.g = 114;
+  // colorconfig.b = 227;
+  // colorconfig.a = 0.9;
+  Marker marker = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0L, Marker::LINE_STRIP,
+    createMarkerScale(0.3, 0.0, 0.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+    // createMarkerScale(0.3, 0.0, 0.0), colorconfig);
+  marker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
+
+
+//TODO: dynamic length
+  const auto reserve_size = linestrings.size() / 2;
+  lanelet::ConstLineStrings3d lefts;
+  lanelet::ConstLineStrings3d rights;
+  lefts.reserve(reserve_size);
+  rights.reserve(reserve_size);
+
+  size_t total_marker_reserve_size{0};
+  for (size_t idx = 1; idx < linestrings.size(); idx += 2) {
+    rights.emplace_back(linestrings.at(idx - 1));
+    lefts.emplace_back(linestrings.at(idx));
+
+    for (const auto & ls : linestrings.at(idx - 1).basicLineString()) {
+      total_marker_reserve_size += ls.size();
+    }
+    for (const auto & ls : linestrings.at(idx).basicLineString()) {
+      total_marker_reserve_size += ls.size();
+    }
+  }
+
+  if (!total_marker_reserve_size) {
+    marker.points.reserve(total_marker_reserve_size);
+  }
+
+  const auto & first_ls = lefts.front().basicLineString();
+  for (const auto & ls : first_ls) {
+    marker.points.push_back(createPoint(ls.x(), ls.y(), ls.z()));
+  }
+
+  for (auto idx = lefts.cbegin() + 1; idx != lefts.cend(); ++idx) {
+    Point front = createPoint(
+      idx->basicLineString().front().x(), idx->basicLineString().front().y(),
+      idx->basicLineString().front().z());
+    Point front_inverted = createPoint(
+      idx->invert().basicLineString().front().x(), idx->invert().basicLineString().front().y(),
+      idx->invert().basicLineString().front().z());
+
+    const auto & marker_back = marker.points.back();
+    const bool isFrontNear = tier4_autoware_utils::calcDistance2d(marker_back, front) <
+                             tier4_autoware_utils::calcDistance2d(marker_back, front_inverted);
+    const auto & left_ls = (isFrontNear) ? idx->basicLineString() : idx->invert().basicLineString();
+    if (idx == lefts.cend()) {
+      for (auto ls = left_ls.cbegin(); ls != left_ls.cbegin() + boundaryInfo_.pointIdx; ++ls) {
+        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
+      }
+    }
+    else {
+      for (auto ls = left_ls.cbegin(); ls != left_ls.cend(); ++ls) {
+        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
+      }
+    }
+
+  }
+
+  for (auto idx = rights.crbegin(); idx != rights.crend(); ++idx) {
+    Point front = createPoint(
+      idx->basicLineString().front().x(), idx->basicLineString().front().y(),
+      idx->basicLineString().front().z());
+    Point front_inverted = createPoint(
+      idx->invert().basicLineString().front().x(), idx->invert().basicLineString().front().y(),
+      idx->invert().basicLineString().front().z());
+
+    const auto & marker_back = marker.points.back();
+    const bool isFrontFurther = tier4_autoware_utils::calcDistance2d(marker_back, front) >
+                                tier4_autoware_utils::calcDistance2d(marker_back, front_inverted);
+    const auto & right_ls =
+      (isFrontFurther) ? idx->basicLineString() : idx->invert().basicLineString();
+    if (idx == rights.crend()) {
+      for (auto ls = right_ls.begin() + boundaryInfo_.pointIdx; ls != right_ls.begin(); --ls) {
+        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
+      }
+    }
+    else {
+      for (auto ls = right_ls.end(); ls != right_ls.begin(); --ls) {
+        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
+      }
     }
   }
 
