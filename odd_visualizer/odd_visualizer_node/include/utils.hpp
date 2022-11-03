@@ -74,23 +74,33 @@ namespace odd_tools
 
     // Geometry functions
     struct BoundaryInfo {
-        size_t laneletIdx{0};
-        size_t pointIdx{0};
+        size_t posePointIDLanelet{0};
+        size_t furtherestLaneletId{0};
+        size_t furtherestPointId{0};
     };
-    BoundaryInfo getRightBoundaryLineString(
+    BoundaryInfo getBoundaryLineString(
         const lanelet::ConstLanelets laneletSequence,
+        const lanelet::ConstLanelet currentLanelet,
         const geometry_msgs::msg::Pose & pose,
         const double forwardLength,
         const double backwardLength);
+    size_t getRightProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
+                                    const size_t & pointID);
+    size_t getLeftProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
+                                   const size_t & pointID);
 
     int getCurrentLaneletPosition(const lanelet::ConstLanelets & laneletSequence, 
-                                   const geometry_msgs::msg::Pose & currentPose,
-                                   lanelet::ConstLanelet & currentLanelet);
+                                  const geometry_msgs::msg::Pose & currentPose,
+                                  const lanelet::ConstLanelet & currentLanelet);
 
     inline lanelet::ConstPoint3d toLaneletPoint(const geometry_msgs::msg::Point & pose)
     {
         return lanelet::Point3d(lanelet::InvalId, pose.x, pose.y, pose.z);
     }
+    void onNonDrivableLane(const lanelet::ConstLanelet lanelet);
+    void onEdge(const lanelet::ConstLanelet lanelet);
+    void onFixedRoadStructures(const lanelet::ConstLanelet lanelet);
+    void onRegulations(const lanelet::ConstLanelet lanelet);
     // lanelet::ArcCoordinates getArcCoordinates(
     //     const lanelet::ConstLanelets & laneletSequence,
     //     const geometry_msgs::msg::Pose & pose);

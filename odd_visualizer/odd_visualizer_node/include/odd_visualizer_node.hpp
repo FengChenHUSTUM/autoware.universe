@@ -100,6 +100,7 @@ private:
     lanelet::traffic_rules::TrafficRulesPtr traffic_rules_ptr_;
     lanelet::ConstLanelets all_lanelets_;
     lanelet::ConstLanelets current_lanelets_;
+    std::shared_ptr<lanelet::ConstLanelet> current_lanelet_;
 
     // lanetype
     lanelet::ConstLanelets road_lanelets_;
@@ -141,13 +142,16 @@ private:
     void creareDrivableBoundaryMarkerArray(const lanelet::ConstLanelets laneletSequence);
     // void getCurrentLane();
 
+    void getODDFromMap(const lanelet::ConstLanelets laneletSequence);
+    void onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet);
     MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings);
-    MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings,
-                                              const odd_tools::BoundaryInfo & boundaryInfo);
+    MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLanelets laneletSequence,
+                                              const odd_tools::BoundaryInfo boundInfo);
 
     std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
     void getColorConfig(odd_tools::odd_colorRGBA &odd_color);
     odd_tools::ODD_elements getParam();
+    
 
     // // lane msgs
     // scenery_msgs::msg::LaneData createRoadLaneMsg();

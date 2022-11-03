@@ -645,6 +645,7 @@ void BehaviorPathPlannerNode::run()
     lanelet::ConstLanelet current_lane; 
     planner_data->route_handler->getClosestLaneletWithinRoute(
       planner_data_->self_pose->pose, &current_lane);
+      lane_IDs_msg.current_lane = current_lane.id();
     const std::vector<lanelet::ConstLanelet> current_lanes = planner_data->route_handler->getLaneletSequence(
     current_lane, planner_data_->self_pose->pose, 20, 10);
     for(long unsigned int i = 0; i < current_lanes.size(); ++i) {

@@ -8,6 +8,7 @@ OddVisualizer::OddVisualizer(
     setvbuf(stdout, NULL, _IONBF, BUFSIZ);
     odd_elements_ = std::make_shared<odd_tools::ODD_elements>();
     *odd_elements_ = getParam();
+    current_lanelet_ = std::make_shared<lanelet::ConstLanelet>();
     //TODO: edit topic path in configuration file
     std::cout << "odd node loaded! "<<'\n';
     odd_driveable_area_publisher_ = 
@@ -19,7 +20,7 @@ OddVisualizer::OddVisualizer(
     std::bind(&OddVisualizer::mapCallback, this, std::placeholders::_1));
 
     lanelet_sequence_subscriber_ = this->create_subscription<laneSequenceWithID>(
-        "/planning/scenario_planning/lane_driving/behavior_planning/odd_visualizer/lanelet_sequence_IDs", 10,
+        "/planning/scenario_planning/lane_driving/behavior_planning/odd_visualizer/lanelet_sequence_IDs", 1,
     std::bind(&OddVisualizer::laneletSequenceCallback, this, std::placeholders::_1));
 
     // odd_roadLane_publisher_ = 
@@ -74,15 +75,18 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     // std::cout <<"odd lanelet sequence call back "<<'\n';
 
     std::vector<lanelet::ConstLanelet> laneletSequence(msg->lane_ids.size());
+    (*current_lanelet_) = lanelet_map_ptr_->laneletLayer.get(msg->current_lane);
     int i = 0;
     for (const auto & laneID : msg->lane_ids) {
         laneletSequence[i++] = lanelet_map_ptr_->laneletLayer.get(laneID);
     }
     current_lanelets_ = laneletSequence;
     odd_elements_->self_pose = self_pose_listener_.getCurrentPose();
-    const auto pose = odd_elements_->self_pose->pose;
+    // const auto pose = odd_elements_->self_pose->pose;
     creareDrivableBoundaryMarkerArray(current_lanelets_);
-    odd_tools::getRightBoundaryLineString(laneletSequence, pose, 200, 20);
+    // getODDFromMap(laneletSequence);
+    // onAdjacentLanelet(*current_lanelet_);
+    // odd_tools::getRightBoundaryLineString(laneletSequence, pose, 200, 20);
 }
 void OddVisualizer::creareDrivableBoundaryMarkerArray(
     const lanelet::ConstLanelets laneletSequence) {
@@ -109,28 +113,34 @@ void OddVisualizer::creareDrivableBoundaryMarkerArray(
     } 
     const auto drivable_area_lines = createDrivableAreaMarkerArray(linestring_shared);
 
-
-    odd_tools::BoundaryInfo boundaryInfo_ = odd_tools::getRightBoundaryLineString(laneletSequence,
-                                                                                  odd_elements_->self_pose->pose,
-                                                                                  odd_elements_->params.forward_path_length,
-                                                                                  odd_elements_->params.backward_path_length);
+    // odd_tools::BoundaryInfo boundaryInfo_ = odd_tools::getBoundaryLineString(laneletSequence,
+    //                                                 (*current_lanelet_),
+    //                                                 odd_elements_->self_pose->pose,
+    //                                                 odd_elements_->params.forward_path_length,
+    //                                                 odd_elements_->params.backward_path_length);
     lanelet::ConstLineStrings3d lineStringBoundary;
+    // std::cout << "sequence size: " << laneletSequence.size() << "; laneletIdx: " << boundaryInfo_.furtherestLaneletId
+    //           << "; pointId: " << boundaryInfo_.furtherestPointId << '\n'
+    //           << "forwardLength: " << odd_elements_->params.forward_path_length<<'\n'
+    //           << "backwardLength: " << odd_elements_->params.backward_path_length<<'\n';
     for (auto curLanelet = laneletSequence.begin();
-        curLanelet != laneletSequence.begin() + boundaryInfo_.laneletIdx;
+        curLanelet != laneletSequence.end();
+        // curLanelet != laneletSequence.begin() + boundaryInfo_.laneletIdx;
         ++curLanelet) {
       lanelet::ConstLineStrings3d linestrings;
       linestrings.reserve(2);
-      linestrings.emplace_back(curLanelet->rightBound3d());
-      linestrings.emplace_back(curLanelet->leftBound3d());
+      linestrings.emplace_back(curLanelet->rightBound());
+      linestrings.emplace_back(curLanelet->leftBound());
       lineStringBoundary.insert(lineStringBoundary.end(),
                                 linestrings.begin(),
                                 linestrings.end());
     }
     
     
-    const auto drivableBoundaryMSG = createDrivableAreaMarkerArray(lineStringBoundary, boundaryInfo_);
+    // const auto drivableBoundaryMSG = createDrivableAreaMarkerArray(lineStringBoundary);
+    // const auto drivableBoundaryMSG = createDrivableAreaMarkerArray(laneletSequence, boundaryInfo_);
     // odd_driveable_area_publisher_->publish(drivable_area_lines);
-    odd_driveable_area_publisher_->publish(drivable_area_lines);
+    odd_driveable_area_publisher_->publish(drivableBoundaryMSG);
 }
 
 MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings) {
@@ -220,110 +230,77 @@ MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLin
   msg.markers.push_back(marker);
   return msg;
 }
-MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings,
-                                                         const odd_tools::BoundaryInfo & boundaryInfo_) {
-  if (linestrings.empty()) {
-    return MarkerArray();
-  }
-  // std_msgs::msg::ColorRGBA colorconfig;
-  // colorconfig.r = 34;
-  // colorconfig.g = 114;
-  // colorconfig.b = 227;
-  // colorconfig.a = 0.9;
+MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLanelets laneletSequence,
+                                                          const odd_tools::BoundaryInfo boundInfo) {
+  MarkerArray msg;
   Marker marker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0L, Marker::LINE_STRIP,
     createMarkerScale(0.3, 0.0, 0.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
-    // createMarkerScale(0.3, 0.0, 0.0), colorconfig);
   marker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
 
+  Marker furPoint = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 99, Marker::SPHERE,
+    createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
 
-//TODO: dynamic length
-  const auto reserve_size = linestrings.size() / 2;
-  lanelet::ConstLineStrings3d lefts;
-  lanelet::ConstLineStrings3d rights;
-  lefts.reserve(reserve_size);
-  rights.reserve(reserve_size);
+    furPoint.pose.position.x = laneletSequence[boundInfo.furtherestLaneletId].centerline()[boundInfo.furtherestPointId].x();
+    furPoint.pose.position.y = laneletSequence[boundInfo.furtherestLaneletId].centerline()[boundInfo.furtherestPointId].y();
+    furPoint.pose.position.z = laneletSequence[boundInfo.furtherestLaneletId].centerline()[boundInfo.furtherestPointId].z();
+    furPoint.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
 
-  size_t total_marker_reserve_size{0};
-  for (size_t idx = 1; idx < linestrings.size(); idx += 2) {
-    rights.emplace_back(linestrings.at(idx - 1));
-    lefts.emplace_back(linestrings.at(idx));
+    msg.markers.push_back(furPoint);
 
-    for (const auto & ls : linestrings.at(idx - 1).basicLineString()) {
-      total_marker_reserve_size += ls.size();
-    }
-    for (const auto & ls : linestrings.at(idx).basicLineString()) {
-      total_marker_reserve_size += ls.size();
-    }
+//TODO:
+// 1. get left boundString(composed of points) from pose to forward futherest
+  // size_t reserveSizeLeft = 0;
+  // for (auto laneletIDx : laneletSequence)
+  // {
+  //   reserveSizeLeft += laneletIDx.leftBound2d().size();
+  // }
+  // std::vector<lanelet::Point2d> leftBound(reserveSizeLeft);
+  int curLaneletPosition = odd_tools::getCurrentLaneletPosition(laneletSequence, odd_elements_->self_pose->pose, *current_lanelet_);
+
+  for (size_t i = boundInfo.posePointIDLanelet; i < laneletSequence[curLaneletPosition].leftBound().size(); ++i)
+  {
+    marker.points.push_back(createPoint(laneletSequence[curLaneletPosition].leftBound()[i].x(),
+                                        laneletSequence[curLaneletPosition].leftBound()[i].y(), 
+                                        laneletSequence[curLaneletPosition].leftBound()[i].z()));
   }
-
-  if (!total_marker_reserve_size) {
-    marker.points.reserve(total_marker_reserve_size);
+  if (curLaneletPosition == (int)(boundInfo.furtherestLaneletId)) 
+  {
+    msg.markers.push_back(marker);
+    return msg;
   }
-
-  const auto & first_ls = lefts.front().basicLineString();
-  for (const auto & ls : first_ls) {
-    marker.points.push_back(createPoint(ls.x(), ls.y(), ls.z()));
-  }
-
-  for (auto idx = lefts.cbegin() + 1; idx != lefts.cend(); ++idx) {
-    Point front = createPoint(
-      idx->basicLineString().front().x(), idx->basicLineString().front().y(),
-      idx->basicLineString().front().z());
-    Point front_inverted = createPoint(
-      idx->invert().basicLineString().front().x(), idx->invert().basicLineString().front().y(),
-      idx->invert().basicLineString().front().z());
-
-    const auto & marker_back = marker.points.back();
-    const bool isFrontNear = tier4_autoware_utils::calcDistance2d(marker_back, front) <
-                             tier4_autoware_utils::calcDistance2d(marker_back, front_inverted);
-    const auto & left_ls = (isFrontNear) ? idx->basicLineString() : idx->invert().basicLineString();
-    if (idx == lefts.cend()) {
-      for (auto ls = left_ls.cbegin(); ls != left_ls.cbegin() + boundaryInfo_.pointIdx; ++ls) {
-        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
+  for (size_t ll = curLaneletPosition + 1; ll <= boundInfo.furtherestLaneletId; ++ll)
+  {
+    if (ll != boundInfo.furtherestLaneletId) 
+    {
+      for (size_t i = 0; i < laneletSequence[ll].leftBound().size(); ++i)
+      {
+        marker.points.push_back(createPoint(laneletSequence[ll].leftBound()[i].x(),
+                                            laneletSequence[ll].leftBound()[i].y(), 
+                                            laneletSequence[ll].leftBound()[i].z()));
       }
     }
-    else {
-      for (auto ls = left_ls.cbegin(); ls != left_ls.cend(); ++ls) {
-        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
-      }
-    }
+    for (size_t i = 0; i < boundInfo.furtherestPointId; ++i)
+    {
+      marker.points.push_back(createPoint(laneletSequence[ll].leftBound()[i].x(),
+                                          laneletSequence[ll].leftBound()[i].y(), 
+                                          laneletSequence[ll].leftBound()[i].z()));
+      msg.markers.push_back(marker);
+      std::cout << "\n##### Analyze #####\n"
+                << "The "<< curLaneletPosition<<" in the sequence( "<<laneletSequence.size()<<")\n"
+                << "futherest point id: "<<boundInfo.furtherestPointId<<"\n"
+                << "futherest lanelet id: "<<boundInfo.furtherestLaneletId<<"\n"
+                << "##### END #####\n";
 
-  }
-
-  for (auto idx = rights.crbegin(); idx != rights.crend(); ++idx) {
-    Point front = createPoint(
-      idx->basicLineString().front().x(), idx->basicLineString().front().y(),
-      idx->basicLineString().front().z());
-    Point front_inverted = createPoint(
-      idx->invert().basicLineString().front().x(), idx->invert().basicLineString().front().y(),
-      idx->invert().basicLineString().front().z());
-
-    const auto & marker_back = marker.points.back();
-    const bool isFrontFurther = tier4_autoware_utils::calcDistance2d(marker_back, front) >
-                                tier4_autoware_utils::calcDistance2d(marker_back, front_inverted);
-    const auto & right_ls =
-      (isFrontFurther) ? idx->basicLineString() : idx->invert().basicLineString();
-    if (idx == rights.crend()) {
-      for (auto ls = right_ls.begin() + boundaryInfo_.pointIdx; ls != right_ls.begin(); --ls) {
-        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
-      }
-    }
-    else {
-      for (auto ls = right_ls.end(); ls != right_ls.begin(); --ls) {
-        marker.points.push_back(createPoint(ls->x(), ls->y(), ls->z()));
-      }
+      return msg;
     }
   }
-
-  if (!marker.points.empty()) {
-    marker.points.push_back(marker.points.front());
-  }
-
-  MarkerArray msg;
-
-  msg.markers.push_back(marker);
   return msg;
+
+// 2. get right from pose to forward furtherest
+// 3. invert right
+// 4. assign left and right to marker array
 }
 
 void OddVisualizer::lanletToPolygonMsg(
@@ -346,6 +323,72 @@ void OddVisualizer::lanletToPolygonMsg(
     }
 }
 
+void OddVisualizer::getODDFromMap(const lanelet::ConstLanelets laneletSequence)
+{
+  for (auto lanelet : laneletSequence)
+  {
+    odd_tools::onNonDrivableLane(lanelet);
+    odd_tools::onEdge(lanelet);
+    odd_tools::onFixedRoadStructures(lanelet);
+    odd_tools::onRegulations(lanelet);
+  }
+}
+
+void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet)
+{
+  const auto rightLanelet = routing_graph_ptr_->right(currentLanelet);
+  const auto leftLanelets = routing_graph_ptr_->leftRelations(currentLanelet);
+  const auto rightLanelets = routing_graph_ptr_->rightRelations(currentLanelet);
+  //TODO: get Left Opposite Lanelets 
+  std::cout << "##### left relationed lanelet #####\n";
+
+  for (auto index : leftLanelets) 
+  {
+    switch (index.relationType)
+    {
+    case lanelet::routing::RelationType::Successor: std::cout << "Successor"<<'\n'; break;
+    case lanelet::routing::RelationType::Left: std::cout << "Left"<<'\n'; break;
+    case lanelet::routing::RelationType::Right: std::cout << "Right"<<'\n'; break;
+    case lanelet::routing::RelationType::AdjacentLeft: std::cout << "AdjacentLeft"<<'\n'; break;
+    case lanelet::routing::RelationType::AdjacentRight: std::cout << "AdjacentRight"<<'\n'; break;
+    case lanelet::routing::RelationType::Conflicting: std::cout << "Conflicting"<<'\n'; break;
+    case lanelet::routing::RelationType::Area: std::cout << "Area"<<'\n'; break;
+    case lanelet::routing::RelationType::None: std::cout << "None"<<'\n'; break;
+    default:
+      break;
+    }
+  }
+  std::cout << "##### End #####\n";
+
+  std::cout << "##### right relationed lanelet #####\n";
+  for (auto index : rightLanelets) 
+  {
+    switch (index.relationType)
+    {
+    case lanelet::routing::RelationType::Successor: std::cout << "Successor"<<'\n'; break;
+    case lanelet::routing::RelationType::Left: std::cout << "Left"<<'\n'; break;
+    case lanelet::routing::RelationType::Right: std::cout << "Right"<<'\n'; break;
+    case lanelet::routing::RelationType::AdjacentLeft: std::cout << "AdjacentLeft"<<'\n'; break;
+    case lanelet::routing::RelationType::AdjacentRight: std::cout << "AdjacentRight"<<'\n'; break;
+    case lanelet::routing::RelationType::Conflicting: std::cout << "Conflicting"<<'\n'; break;
+    case lanelet::routing::RelationType::Area: std::cout << "Area"<<'\n'; break;
+    case lanelet::routing::RelationType::None: std::cout << "None"<<'\n'; break;
+    default:
+      break;
+    }
+  }
+  std::cout << "##### End #####\n";
+
+  if (rightLanelet) {
+    std::cout << "##### right adjacent lanelet #####\n";
+    odd_tools::onNonDrivableLane(rightLanelet.value());
+    odd_tools::onEdge(rightLanelet.value());
+    odd_tools::onFixedRoadStructures(rightLanelet.value());
+    odd_tools::onRegulations(rightLanelet.value());
+    std::cout << "##### End #####\n";
+  }
+
+}
 
 // scenery_msgs::msg::LaneData OddVisualizer::createRoadLaneMsg() {
 //     scenery_msgs::msg::LaneData laneData;

@@ -4,6 +4,7 @@ module scenery_msgs {
     module msg {
         struct laneSequenceWithID {
             sequence<int64> lane_ids;
+            int64 current_lane;
         };
     };
 };

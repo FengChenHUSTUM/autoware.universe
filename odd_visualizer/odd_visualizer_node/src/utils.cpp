@@ -134,106 +134,159 @@ namespace odd_tools
         return {};
     }
 
-    BoundaryInfo getRightBoundaryLineString(
+    BoundaryInfo getBoundaryLineString(
         const lanelet::ConstLanelets laneletSequence,
+        const lanelet::ConstLanelet currentLanelet,
         const geometry_msgs::msg::Pose & pose,
         const double forwardLength,
         const double backwardLength)
     {
-        std::cout << "forward: " << forwardLength << "; backward: " << backwardLength << '\n';
+        // std::cout << "forward: " << forwardLength << "; backward: " << backwardLength << '\n';
 
-        lanelet::ConstLanelet currentLanelet;
+        // lanelet::ConstLanelet currentLanelet;
         int curLaneletPosition = getCurrentLaneletPosition(laneletSequence, pose, currentLanelet);
         if (curLaneletPosition == -1) {
             return {};
         }
-        double curLength = 0;
+        double curLength = backwardLength;
 
         // current position of the ego
         const auto poseLanelet = toLaneletPoint(pose.position);
 
         const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
         const auto projectedPoint = lanelet::geometry::internal::signedDistanceImpl(curCenterLine, poseLanelet.basicPoint2d()).second;
-
         // find the corrsponding projected point of the current pose on the centerline
-        auto iterStartPoint = curCenterLine.begin();
-        for (auto itPoint = curCenterLine.begin(); itPoint != curCenterLine.end(); ++itPoint) {
-            if (boost::geometry::equals(projectedPoint.result->segmentPoint1, itPoint->basicPoint2d())) {
-                iterStartPoint = itPoint;
-                // std::cout << "这样找点确实可以, point id: " << itPoint->id()<<'\n';
-                break;
-            }
-        }
-
-        // find the furtherest point on the centerline with respect to the fixed forward length
-        // lanelet::ConstPoint2d::BasicPoint furtherstPoint;
-        // lanelet::ConstLanelet furtherstLanelet;
-
+        // auto iterStartPoint = curCenterLine.begin();
+        size_t poseCenterline = 0;
         size_t furtherstLaneletIdx = 0;
         size_t furtherstPointIdx = 0;
-
-        for (auto & itPoint = iterStartPoint; itPoint != curCenterLine.end(); ++itPoint){
-            //check if the accumulate length in current lanelet has exceeded the fix forward length
-            if (itPoint != curCenterLine.begin()) {
-                curLength += lanelet::geometry::distance(itPoint->basicPoint2d(), (itPoint - 1)->basicPoint2d());
+        for (size_t i = 0; i < curCenterLine.size(); ++i) {
+            if (boost::geometry::equals(projectedPoint.result->segmentPoint1, curCenterLine[i].basicPoint2d())) {
+                // iterStartPoint = itPoint;
+                // std::cout << "这样找点确实可以, point id: " << itPoint->id()<<'\n';
+                curLength = 0;
+                poseCenterline = i;
             }
+            if (i > 0) {
+                curLength += lanelet::geometry::distance(curCenterLine[i].basicPoint2d(), 
+                                                        (curCenterLine[i - 1]).basicPoint2d());
+            }
+            //check if the accumulate length in current lanelet has exceeded the fix forward lengt
             if (curLength >= forwardLength) {
-
-                // furtherstPoint = itPoint->basicPoint();
-                // furtherstLanelet = currentLanelet;
                 furtherstLaneletIdx = curLaneletPosition;
-                // TODO: get the projected point of the furtherest point on the right and left boundary
-                const auto rightProjection = lanelet::geometry::internal::signedDistanceImpl(currentLanelet.rightBound2d(), poseLanelet.basicPoint2d()).second;
-                for (auto rightPoint = currentLanelet.rightBound2d().begin();
-                     !boost::geometry::equals(rightProjection.result->segmentPoint1, rightPoint->basicPoint2d());
-                     ++rightPoint)
-                {
-                    furtherstPointIdx++;
-                }
-                return {furtherstLaneletIdx, furtherstPointIdx};
+                return {poseCenterline, furtherstLaneletIdx, i};
             }
         }
 
         // if the the accumulate length is shorter than the fixed length, continue the above process
         // in the following lanlets in the sequence
-        
-        for (auto itLanlet = laneletSequence.begin() + curLaneletPosition + 1;
-            itLanlet != laneletSequence.end(); ++itLanlet)
+        // for (auto itLanlet = laneletSequence.begin();
+        int i = 0;
+        // std::cout << "curLaneletPosition" <<curLaneletPosition<<'\n';
+        for (size_t lanelet = curLaneletPosition + 1; lanelet < laneletSequence.size(); ++lanelet)
         {   
-            const auto centerLine = lanelet::utils::to2D(itLanlet->centerline());
+            const auto centerLine = lanelet::utils::to2D(laneletSequence[lanelet].centerline());
             furtherstLaneletIdx++;
             furtherstPointIdx = 0;
-            for (auto itPoint = centerLine.begin() + 1; itPoint != centerLine.end(); ++itPoint) {
-                curLength += lanelet::geometry::distance(itPoint->basicPoint2d(), (itPoint - 1)->basicPoint2d());
+            for (auto itPoint = centerLine.begin(); itPoint != centerLine.end(); ++itPoint) {
+                furtherstPointIdx++;
+
+                if (itPoint != centerLine.begin()) {
+                    curLength += lanelet::geometry::distance(itPoint->basicPoint2d(), (itPoint - 1)->basicPoint2d());
+                }
                 if (curLength >= forwardLength) {
-                    const auto rightProjection = lanelet::geometry::internal::signedDistanceImpl(itLanlet->rightBound2d(), itPoint->basicPoint2d()).second;
-                    for (auto rightPoint = itLanlet->rightBound2d().begin();
-                        !boost::geometry::equals(rightProjection.result->segmentPoint1, rightPoint->basicPoint2d());
-                        ++rightPoint)
-                    {
-                        furtherstPointIdx++;
-                    }
-                    return {furtherstLaneletIdx, furtherstPointIdx};
+                    return {poseCenterline, furtherstLaneletIdx, furtherstPointIdx};
                 }
             }
+            std::cout << "loop end: "<< i++ << '\n';
         }
-        // std::cout << "最远点坐标： x = "<<furtherstPoint.x() << "; y = " << furtherstPoint.y() << '\n';
         return {};
     }
-    
-    int getCurrentLaneletPosition(const lanelet::ConstLanelets & laneletSequence, 
-                                  const geometry_msgs::msg::Pose & currentPose,
-                                  lanelet::ConstLanelet & currentLanelet) 
+    size_t getRightProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
+                                    const size_t & pointID)
     {
-        lanelet::BasicPoint2d curPoint(currentPose.position.x, currentPose.position.y);
-        for (size_t i = 0; i < laneletSequence.size(); ++i) {
-            if (lanelet::geometry::inside(laneletSequence[i], curPoint)) {
-                currentLanelet = laneletSequence[i];
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto rightProjection = lanelet::geometry::internal::signedDistanceImpl(currentLanelet.rightBound2d(), curCenterLine[pointID].basicPoint2d()).second;
+        for (size_t i = 0; i < currentLanelet.rightBound2d().size(); ++i) {
+            if(boost::geometry::equals(rightProjection.result->segmentPoint1, currentLanelet.rightBound2d()[i].basicPoint2d())) {
                 return i;
             }
         }
-        return -1;
+        return 0;
     }
 
+    size_t getLeftProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
+                                    const size_t & pointID)
+    {
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto leftProjection = lanelet::geometry::internal::signedDistanceImpl(currentLanelet.leftBound2d(), curCenterLine[pointID].basicPoint2d()).second;
+        for (size_t i = 0; i < currentLanelet.leftBound2d().size(); ++i) {
+            if(boost::geometry::equals(leftProjection.result->segmentPoint1, currentLanelet.leftBound2d()[i].basicPoint2d())) {
+                return i;
+            }
+        }
+        return 0;
+    }
 
+    int getCurrentLaneletPosition(const lanelet::ConstLanelets & laneletSequence, 
+                                  const geometry_msgs::msg::Pose & currentPose,
+                                  const lanelet::ConstLanelet & currentLanelet) 
+    {
+        int res = -1;
+        lanelet::BasicPoint2d curPoint(currentPose.position.x, currentPose.position.y);
+        for (size_t i = 0; i < laneletSequence.size(); ++i) {
+            // if (lanelet::geometry::inside(laneletSequence[i], curPoint)) {
+                if ( currentLanelet == laneletSequence[i]){
+                // currentLanelet = laneletSequence[i];
+                res = i;
+                return res;
+            }
+        }
+        return res;
+    }
+
+    void onNonDrivableLane(const lanelet::ConstLanelet lanelet) 
+    {
+        if (lanelet.hasAttribute("EmergencyLane")) {
+            std::cout << "LaneID: " << lanelet.id() << " is emergency lane" << '\n';
+            //TODO: populate the function here
+        }
+        for (auto attr : lanelet.attributes())
+        {
+            std::cout << "LaneID: " << lanelet.id() << "; attribute: "<< attr.first
+            << "; "<< attr.second.value() << '\n';
+        }
+        // TODO: add other params checker
+    }
+
+    void onEdge(const lanelet::ConstLanelet lanelet) 
+    {
+        if (lanelet.hasAttribute("StopLine")) {
+            std::cout << "LaneID: " << lanelet.id() << " has line marker: stop line" << '\n';
+            //TODO: populate the function here
+        }
+        // TODO: add other params checker
+    }
+
+    void onFixedRoadStructures(const lanelet::ConstLanelet lanelet) 
+    {
+        if (lanelet.hasAttribute("Vegetation")) {
+            std::cout << "LaneID: " << lanelet.id() << " has fixed structure: vegetation" << '\n';
+            //TODO: populate the function here
+        }
+        // TODO: add other params checker
+    }
+
+    void onRegulations(const lanelet::ConstLanelet lanelet) 
+    {
+        int i = 0;
+        for (auto regulation : lanelet.regulatoryElements())
+        {
+            std::cout << "regulation size "<<  i++ << " : "<<regulation->size()<< '\n';
+            for (auto elem : regulation->attributes()) {
+                std::cout << "Regulation attributes: " << elem.first
+                << "; "<< elem.second.value() << '\n';
+            }
+        }
+    }
 } // namespace odd_tools
