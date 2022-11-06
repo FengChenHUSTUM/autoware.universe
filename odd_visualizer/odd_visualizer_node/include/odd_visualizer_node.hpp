@@ -2,6 +2,7 @@
 #define ODD_VISUALIZER_NODE_HPP_
 
 #include <vector>
+#include <algorithm>
 
 // Ros2
 #include <rclcpp/rclcpp.hpp>
@@ -28,6 +29,7 @@
 #include <autoware_auto_mapping_msgs/msg/had_map_bin.hpp>
 #include <behavior_path_planner/debug_utilities.hpp>
 #include <tier4_autoware_utils/ros/marker_helper.hpp>
+#include <motion_utils/resample/resample.hpp>
 // #include <tier4_autoware_utils/ros/self_pose_listener.hpp>
 
 // Lanelet
@@ -45,6 +47,7 @@
 #include <lanelet2_routing/RoutingCost.h>
 #include <lanelet2_routing/RoutingGraph.h>
 #include <lanelet2_routing/RoutingGraphContainer.h>
+#define bgPoint  boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>
 
 namespace odd_visualizer
 {
@@ -68,6 +71,8 @@ using scenery_msgs::msg::laneSequenceWithID;
 
 
 using autoware_auto_mapping_msgs::msg::HADMapBin;
+
+
 
 // using autoware_auto_mapping_msgs::msg::HADMapBin; 
 class OddVisualizer : public rclcpp::Node
@@ -147,6 +152,7 @@ private:
     MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings);
     MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLanelets laneletSequence,
                                               const odd_tools::BoundaryInfo boundInfo);
+    MarkerArray createCenterlineInterest();
 
     std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
     void getColorConfig(odd_tools::odd_colorRGBA &odd_color);

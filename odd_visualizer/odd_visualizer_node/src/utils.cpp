@@ -289,4 +289,16 @@ namespace odd_tools
             }
         }
     }
+
+    double getArcLengthFromPoints(lanelet::ConstLineString3d::TwoDType inputLine)
+    {
+        double res = 0;
+        for (size_t i = 0; i < inputLine.size(); ++i) {
+            if (i > 0) {
+                res += boost::geometry::distance(inputLine[i].basicPoint2d(),
+                                                 inputLine[i - 1].basicPoint2d());
+            }
+        }
+        return res;
+    }
 } // namespace odd_tools

@@ -32,6 +32,7 @@
   <depend>lanelet2_extension</depend>
   <depend>behavior_path_planner</depend>
   <depend>route_handler</depend>
+  <depend>motion_utils</depend>
 
   <test_depend>ament_cmake_ros</test_depend>
 

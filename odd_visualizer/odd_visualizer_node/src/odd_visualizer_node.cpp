@@ -82,8 +82,10 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     }
     current_lanelets_ = laneletSequence;
     odd_elements_->self_pose = self_pose_listener_.getCurrentPose();
+    odd_driveable_area_publisher_->publish(createCenterlineInterest());
+
     // const auto pose = odd_elements_->self_pose->pose;
-    creareDrivableBoundaryMarkerArray(current_lanelets_);
+    // creareDrivableBoundaryMarkerArray(current_lanelets_);
     // getODDFromMap(laneletSequence);
     // onAdjacentLanelet(*current_lanelet_);
     // odd_tools::getRightBoundaryLineString(laneletSequence, pose, 200, 20);
@@ -140,7 +142,103 @@ void OddVisualizer::creareDrivableBoundaryMarkerArray(
     // const auto drivableBoundaryMSG = createDrivableAreaMarkerArray(lineStringBoundary);
     // const auto drivableBoundaryMSG = createDrivableAreaMarkerArray(laneletSequence, boundaryInfo_);
     // odd_driveable_area_publisher_->publish(drivable_area_lines);
-    odd_driveable_area_publisher_->publish(drivableBoundaryMSG);
+    
+    // odd_driveable_area_publisher_->publish(createCenterlineInterest());
+}
+
+MarkerArray OddVisualizer::createCenterlineInterest() {
+  MarkerArray msg;
+  Marker centerLineMarker = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0l, Marker::LINE_STRIP,
+    createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+  centerLineMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
+
+  Marker poseMarker = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "ego_pose", 0l, Marker::SPHERE,
+    createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+  // double forwardLength = odd_elements_->params.forward_path_length;
+  // const lanelet::ConstLanelets laneletSequence = current_lanelets_;
+  const lanelet::ConstLanelet currentLanelet = *current_lanelet_;
+  const geometry_msgs::msg::Pose pose = odd_elements_->self_pose->pose;
+  poseMarker.pose = pose;
+  msg.markers.push_back(poseMarker);
+
+  // convert points in current centerline into poses for resampling
+  const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+  std::vector<geometry_msgs::msg::Pose> centerlinePoses(curCenterLine.size());
+  for (size_t i = 0; i < curCenterLine.size(); ++i) {
+    centerlinePoses[i] = odd_tools::createPose(curCenterLine[i].x(),
+                                               curCenterLine[i].y(),
+                                               0);
+  }
+
+  // resample the centerline points
+  // caculate the whole arc length of the line to be resampled
+  std::vector<double> resampled_arclength;
+  const double arcLength = odd_tools::getArcLengthFromPoints(curCenterLine);
+  const auto duplicatePoint = [&](const auto & vec, const auto x) {
+    if (vec.empty()) return false;
+    const auto has_close = [&](const auto v) { return std::abs(v - x) < 0.01; };
+    return std::find_if(vec.begin(), vec.end(), has_close) != vec.end();
+  };
+  for (double dis = 0.0; dis < arcLength; dis+= 1.0) {
+    if (!duplicatePoint(resampled_arclength, dis)) {
+      resampled_arclength.push_back(dis);
+    }
+  }
+
+  auto resampledCenterline = motion_utils::resamplePoseVector(centerlinePoses, resampled_arclength);
+
+  // find the nearest projected point of the current pose of the ego in the centerline
+    // current position of the ego
+  const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
+  size_t poseInCenterline = 0;
+  double minDis = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < resampledCenterline.size(); ++i) {
+    bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, 0);
+
+    double tmpDis = boost::geometry::distance(point1, egoPoint);
+    if (tmpDis < minDis) {
+      minDis = tmpDis;
+      poseInCenterline = i;
+      
+      std::cout << "\n********** 距离信息 **********\n"
+                << "当前最小距离： " << minDis << '\n'
+                << "********** END距离信息 **********\n";
+    }
+  }
+
+    std::cout << "\n########### Debug信息 ###########\n"
+              << "定位对应中间线的点位置" << poseInCenterline << '\n'
+              << "重采样后中间线的点的数量" << resampledCenterline.size() << '\n'
+              << "########### END of Debug信息 ###########\n";
+
+
+  // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
+  // store the points in interest in a point vector
+  double curLength = 0;
+  std::vector<geometry_msgs::msg::Point> forwardPoints;
+  forwardPoints.reserve((resampledCenterline.size() - poseInCenterline));
+  for (size_t i = poseInCenterline; i < resampledCenterline.size(); ++i) {
+    if (i > 0) {
+      curLength += boost::geometry::distance(bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z),
+                                             bgPoint(resampledCenterline[i - 1].position.x, resampledCenterline[i - 1].position.y, resampledCenterline[i - 1].position.z));
+      forwardPoints.push_back(resampledCenterline[i].position);
+    }
+    if (curLength > 10) {
+      break;
+    }
+  }
+  // forwardPoints.shrink_to_fit();
+  centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                 forwardPoints.begin(), forwardPoints.end());
+  std::cout << "\n########### MSG信息 ###########\n"
+            << "前方点的数量" << forwardPoints.size() << '\n'
+            << "########### END of MSg信息 ###########\n";
+  msg.markers.push_back(centerLineMarker);
+  return msg;
+
+
 }
 
 MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings) {

@@ -101,6 +101,18 @@ namespace odd_tools
     void onEdge(const lanelet::ConstLanelet lanelet);
     void onFixedRoadStructures(const lanelet::ConstLanelet lanelet);
     void onRegulations(const lanelet::ConstLanelet lanelet);
+    inline geometry_msgs::msg::Pose createPose(const double x, const double y, const double z) {
+        geometry_msgs::msg::Pose pose;
+        pose.orientation.w = 1.0;
+        pose.orientation.x = 0.0;
+        pose.orientation.y = 0.0;
+        pose.orientation.z = 0.0;
+        pose.position.x = x;
+        pose.position.y = y;
+        pose.position.z = z;
+        return pose;
+    }
+    double getArcLengthFromPoints(lanelet::ConstLineString3d::TwoDType inputLine);
     // lanelet::ArcCoordinates getArcCoordinates(
     //     const lanelet::ConstLanelets & laneletSequence,
     //     const geometry_msgs::msg::Pose & pose);
