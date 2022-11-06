@@ -301,4 +301,133 @@ namespace odd_tools
         }
         return res;
     }
+
+    std::vector<geometry_msgs::msg::Pose> resampleLine(const lanelet::ConstLineString3d::TwoDType & curCenterLine,
+                                                       const double & interval)
+    {
+        // convert points in current centerline into poses for resampling
+        std::vector<geometry_msgs::msg::Pose> centerlinePoses(curCenterLine.size());
+        for (size_t i = 0; i < curCenterLine.size(); ++i) {
+            centerlinePoses[i] = createPose(curCenterLine[i].x(),
+                                            curCenterLine[i].y(),
+                                            0);
+        }
+        // resample the centerline points
+        // caculate the whole arc length of the line to be resampled
+        std::vector<double> resampled_arclength;
+        const double arcLength = getArcLengthFromPoints(curCenterLine);
+        const auto duplicatePoint = [&](const auto & vec, const auto x) {
+            if (vec.empty()) return false;
+            const auto has_close = [&](const auto v) { return std::abs(v - x) < 0.01; };
+            return std::find_if(vec.begin(), vec.end(), has_close) != vec.end();
+        };
+        for (double dis = 0.0; dis < arcLength; dis+= interval) {
+            if (!duplicatePoint(resampled_arclength, dis)) {
+            resampled_arclength.push_back(dis);
+            }
+        }
+
+        return motion_utils::resamplePoseVector(centerlinePoses, resampled_arclength);
+    }
+
+    bgPoint getFurtherestForwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                      const geometry_msgs::msg::Pose & pose,
+                                      const double & fixedLength,
+                                      double & curLength,
+                                      const double & interval)
+    {
+        // current position of the ego
+        const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+
+        const auto resampledCenterline = resampleLine(curCenterLine, interval);
+
+        // find the nearest projected point of the current pose of the ego in the centerline
+        size_t poseInCenterline = 0;
+        double minDis = std::numeric_limits<double>::max();
+        for (size_t i = 0; i < resampledCenterline.size(); ++i) {
+            bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, 0);
+
+            double tmpDis = boost::geometry::distance(point1, egoPoint);
+            if (tmpDis < minDis) {
+            minDis = tmpDis;
+            poseInCenterline = i;
+            }
+        }
+
+        // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
+        // return the furtherest point
+        for (size_t i = poseInCenterline; i < resampledCenterline.size(); ++i) {
+            if (i > 0) {
+            curLength += boost::geometry::distance(bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z),
+                                                    bgPoint(resampledCenterline[i - 1].position.x, resampledCenterline[i - 1].position.y, resampledCenterline[i - 1].position.z));
+            }
+            if (curLength >= fixedLength) {
+            return bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z);
+            }
+        }
+        return bgPoint(resampledCenterline.end()->position.x, resampledCenterline.end()->position.y, resampledCenterline.end()->position.z);
+    }
+
+
+    bgPoint getFurtherestForwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                      const double & fixedLength,
+                                      double & curLength,
+                                      const double & interval)
+    {
+        // convert points in current centerline into poses for resampling
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto resampledCenterline = resampleLine(curCenterLine, interval);
+
+        // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
+        // return the furtherest point
+        for (size_t i = 0; i < resampledCenterline.size(); ++i) {
+            if (i > 0) {
+            curLength += boost::geometry::distance(bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z),
+                                                    bgPoint(resampledCenterline[i - 1].position.x, resampledCenterline[i - 1].position.y, resampledCenterline[i - 1].position.z));
+            }
+            if (curLength >= fixedLength) {
+            return bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z);
+            }
+        }
+        return bgPoint(resampledCenterline.end()->position.x, resampledCenterline.end()->position.y, resampledCenterline.end()->position.z);
+    }
+
+    std::vector<geometry_msgs::msg::Point> getMarkerPoints(const std::vector<geometry_msgs::msg::Pose> & bound,
+                                                           const bgPoint & startPoint,
+                                                           const bgPoint & endPoint)
+    {
+        double startMinDis = std::numeric_limits<double>::max();
+        double endMinDis = startMinDis;
+        size_t startPointIndex = 0;
+        size_t endPointIndex = 0;
+
+        for (size_t i = 0; i < bound.size(); ++i) {
+            bgPoint point(bound[i].position.x,
+                        bound[i].position.y,
+                        bound[i].position.z);
+            double tmpDis = boost::geometry::distance(point, startPoint);
+            if (tmpDis < startMinDis) {
+                startMinDis = tmpDis;
+                startPointIndex = i;
+            }
+        }
+
+        for (size_t i = 0; i < bound.size(); ++i) {
+            bgPoint point(bound[i].position.x,
+                        bound[i].position.y,
+                        bound[i].position.z);
+            double tmpDis = boost::geometry::distance(point, endPoint);
+            if (tmpDis < endMinDis) {
+                endMinDis = tmpDis;
+                endPointIndex = i;
+            }
+        }
+        std::vector<geometry_msgs::msg::Point> res;
+        res.reserve(endPointIndex - startPointIndex);
+        for (size_t i = startPointIndex; i < endPointIndex; ++i) {
+            res.push_back(bound[i].position);
+        }
+        return res;
+    }
 } // namespace odd_tools

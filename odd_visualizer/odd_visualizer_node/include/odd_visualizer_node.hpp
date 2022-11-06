@@ -47,7 +47,6 @@
 #include <lanelet2_routing/RoutingCost.h>
 #include <lanelet2_routing/RoutingGraph.h>
 #include <lanelet2_routing/RoutingGraphContainer.h>
-#define bgPoint  boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>
 
 namespace odd_visualizer
 {

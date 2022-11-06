@@ -163,78 +163,57 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
   poseMarker.pose = pose;
   msg.markers.push_back(poseMarker);
 
-  // convert points in current centerline into poses for resampling
-  const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
-  std::vector<geometry_msgs::msg::Pose> centerlinePoses(curCenterLine.size());
-  for (size_t i = 0; i < curCenterLine.size(); ++i) {
-    centerlinePoses[i] = odd_tools::createPose(curCenterLine[i].x(),
-                                               curCenterLine[i].y(),
-                                               0);
-  }
-
-  // resample the centerline points
-  // caculate the whole arc length of the line to be resampled
-  std::vector<double> resampled_arclength;
-  const double arcLength = odd_tools::getArcLengthFromPoints(curCenterLine);
-  const auto duplicatePoint = [&](const auto & vec, const auto x) {
-    if (vec.empty()) return false;
-    const auto has_close = [&](const auto v) { return std::abs(v - x) < 0.01; };
-    return std::find_if(vec.begin(), vec.end(), has_close) != vec.end();
-  };
-  for (double dis = 0.0; dis < arcLength; dis+= 1.0) {
-    if (!duplicatePoint(resampled_arclength, dis)) {
-      resampled_arclength.push_back(dis);
-    }
-  }
-
-  auto resampledCenterline = motion_utils::resamplePoseVector(centerlinePoses, resampled_arclength);
-
-  // find the nearest projected point of the current pose of the ego in the centerline
-    // current position of the ego
+  // current position of the ego
   const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
-  size_t poseInCenterline = 0;
-  double minDis = std::numeric_limits<double>::max();
-  for (size_t i = 0; i < resampledCenterline.size(); ++i) {
-    bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, 0);
-
-    double tmpDis = boost::geometry::distance(point1, egoPoint);
-    if (tmpDis < minDis) {
-      minDis = tmpDis;
-      poseInCenterline = i;
-      
-      std::cout << "\n********** 距离信息 **********\n"
-                << "当前最小距离： " << minDis << '\n'
-                << "********** END距离信息 **********\n";
-    }
-  }
-
-    std::cout << "\n########### Debug信息 ###########\n"
-              << "定位对应中间线的点位置" << poseInCenterline << '\n'
-              << "重采样后中间线的点的数量" << resampledCenterline.size() << '\n'
-              << "########### END of Debug信息 ###########\n";
-
-
-  // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
-  // store the points in interest in a point vector
+  const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+  
   double curLength = 0;
-  std::vector<geometry_msgs::msg::Point> forwardPoints;
-  forwardPoints.reserve((resampledCenterline.size() - poseInCenterline));
-  for (size_t i = poseInCenterline; i < resampledCenterline.size(); ++i) {
-    if (i > 0) {
-      curLength += boost::geometry::distance(bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z),
-                                             bgPoint(resampledCenterline[i - 1].position.x, resampledCenterline[i - 1].position.y, resampledCenterline[i - 1].position.z));
-      forwardPoints.push_back(resampledCenterline[i].position);
-    }
-    if (curLength > 10) {
-      break;
-    }
+  // the postion of current lanelet in the lanelet sequence
+  size_t curIndex = 0;
+  // get all the arclength of each lanelet in the sequence
+  std::vector<double> lengthsLaneltes;
+  lengthsLaneltes.reserve(current_lanelets_.size());
+  for (size_t i = 0; i < current_lanelets_.size(); ++i) {
+    if (current_lanelets_[i] == currentLanelet) curIndex = i;
+    const auto curllCenterLine = lanelet::utils::to2D(current_lanelets_[i].centerline());
+    lengthsLaneltes.push_back(odd_tools::getArcLengthFromPoints(curllCenterLine));
   }
-  // forwardPoints.shrink_to_fit();
-  centerLineMarker.points.insert(centerLineMarker.points.end(), 
-                                 forwardPoints.begin(), forwardPoints.end());
-  std::cout << "\n########### MSG信息 ###########\n"
-            << "前方点的数量" << forwardPoints.size() << '\n'
-            << "########### END of MSg信息 ###########\n";
+  // ############### Find the furtherest forward point ###############
+  auto forwardPoint = odd_tools::getFurtherestForwardPoint(currentLanelet,
+                                                           pose,
+                                                           10,
+                                                           curLength);
+  // If the furtherest forward point is not in the current lanelet
+  size_t dyIndex = curIndex;
+  if (curLength < 10) {
+    while (curLength + lengthsLaneltes[dyIndex] < 10) {
+      curLength += lengthsLaneltes[dyIndex++];
+    }
+    forwardPoint = odd_tools::getFurtherestForwardPoint(current_lanelets_[dyIndex],
+                                                        10,
+                                                        curLength);
+  }
+  // if the furtherest forward point is in the current lanelet
+  else {
+    const auto leftBound = lanelet::utils::to2D(current_lanelets_[curIndex].leftBound());
+    const auto rightBound = lanelet::utils::to2D(current_lanelets_[curIndex].rightBound());
+    
+    const auto resampledLeft = odd_tools::resampleLine(leftBound, 1.0);
+    const auto resampledRight = odd_tools::resampleLine(rightBound, 1.0);
+    
+    const auto leftMarkerPoints = odd_tools::getMarkerPoints(resampledLeft,
+                                                             egoPoint,
+                                                             forwardPoint);
+    const auto rightMarkerPoints = odd_tools::getMarkerPoints(resampledRight,
+                                                              egoPoint,
+                                                              forwardPoint);
+    centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                   leftMarkerPoints.begin(), leftMarkerPoints.end());
+    centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                   rightMarkerPoints.rbegin(), rightMarkerPoints.rend());
+
+  }
+  
   msg.markers.push_back(centerLineMarker);
   return msg;
 

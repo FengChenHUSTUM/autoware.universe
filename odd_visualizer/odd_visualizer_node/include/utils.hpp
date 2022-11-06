@@ -23,6 +23,8 @@
 #include <route_handler/route_handler.hpp>
 #include <tier4_autoware_utils/ros/self_pose_listener.hpp>
 
+#define bgPoint  boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>
+
 namespace odd_tools
 {
     struct odd_colorRGBA {
@@ -113,6 +115,60 @@ namespace odd_tools
         return pose;
     }
     double getArcLengthFromPoints(lanelet::ConstLineString3d::TwoDType inputLine);
+
+    /**
+     * @brief resample a line string with an interval
+     * 
+     * @param curCenterLine 
+     * @param interval 
+     * @return std::vector<geometry_msgs::msg::Pose> 
+     */
+    std::vector<geometry_msgs::msg::Pose> resampleLine(const lanelet::ConstLineString3d::TwoDType & curCenterLine,
+                                                       const double & interval);
+
+    /**
+     * @brief When the furtherest point is in current lanelet,
+    * get the Furtherest Forward Point object from the center line of this lanelet
+    * 
+    * @param currentLanelet 
+    * @param pose 
+    * @param interval 
+    * @param fixedLength 
+    * @param curLength 
+    * @return the position of the Furtherest Forward Point in the centerline 
+    * (boost geometry point model) 
+    */
+    bgPoint getFurtherestForwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                      const geometry_msgs::msg::Pose & pose,
+                                      const double & fixedLength,
+                                      double & curLength,
+                                      const double & interval = 1.0);
+    /**
+     * @brief Get the Furtherest Forward Point object
+     * 
+     * @param currentLanelet 
+     * @param fixedLength 
+     * @param curLength 
+     * @param interval
+     * @return the position of the Furtherest Forward Point in the centerline 
+     * (boost geometry point model) 
+     */
+    bgPoint getFurtherestForwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                      const double & fixedLength,
+                                      double & curLength,
+                                      const double & interval = 1.0);
+
+    /**
+     * @brief Get the Marker Points object from a lanlet boundary
+     * 
+     * @param bound 
+     * @param startPoint 
+     * @param endPoint 
+     * @return std::vector<geometry_msgs::msg::Point> 
+     */
+    std::vector<geometry_msgs::msg::Point> getMarkerPoints(const std::vector<geometry_msgs::msg::Pose> & bound,
+                                                           const bgPoint & startPoint,
+                                                           const bgPoint & endPoint);
     // lanelet::ArcCoordinates getArcCoordinates(
     //     const lanelet::ConstLanelets & laneletSequence,
     //     const geometry_msgs::msg::Pose & pose);
