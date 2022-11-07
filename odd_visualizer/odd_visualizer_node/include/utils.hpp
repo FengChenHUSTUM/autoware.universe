@@ -114,6 +114,13 @@ namespace odd_tools
         pose.position.z = z;
         return pose;
     }
+    inline geometry_msgs::msg::Point createPoint(const double x, const double y, const double z) {
+        geometry_msgs::msg::Point point;
+        point.x = x;
+        point.y = y;
+        point.z = z;
+        return point;
+    }
     double getArcLengthFromPoints(lanelet::ConstLineString3d::TwoDType inputLine);
 
     /**

@@ -170,7 +170,7 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
   double curLength = 0;
   // the postion of current lanelet in the lanelet sequence
   size_t curIndex = 0;
-  // get all the arclength of each lanelet in the sequence
+  // get the arclength of each lanelet in the sequence
   std::vector<double> lengthsLaneltes;
   lengthsLaneltes.reserve(current_lanelets_.size());
   for (size_t i = 0; i < current_lanelets_.size(); ++i) {
@@ -183,41 +183,94 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
                                                            pose,
                                                            10,
                                                            curLength);
+  // operations on current lanelet                       
+  const auto curLeftBound = lanelet::utils::to2D(current_lanelets_[curIndex].leftBound());
+  const auto curRightBound = lanelet::utils::to2D(current_lanelets_[curIndex].rightBound());
+  
+  const auto curResampledLeft = odd_tools::resampleLine(curLeftBound, 0.5);
+  const auto curResampledRight = odd_tools::resampleLine(curRightBound, 0.5);
+
+  auto leftMarkerPoints = odd_tools::getMarkerPoints(curResampledLeft,
+                                                      egoPoint,
+                                                      forwardPoint);
+  auto rightMarkerPoints = odd_tools::getMarkerPoints(curResampledRight,
+                                                      egoPoint,
+                                                      forwardPoint);
+
   // If the furtherest forward point is not in the current lanelet
-  size_t dyIndex = curIndex;
+  size_t dyIndex = curIndex; // the furtherest lanelet
+  // find out in which lanelet the furtherest point is
   if (curLength < 10) {
-    while (curLength + lengthsLaneltes[dyIndex] < 10) {
-      curLength += lengthsLaneltes[dyIndex++];
+    // if (false) {
+    while (curLength < 10) {
+      curLength += lengthsLaneltes[++dyIndex];
     }
+
+    // Operations on lanelets between the current lanelet and the furtherest lanelet:
+    // push back the boundary line strings of the lanelets before the furtherest lanelet
+    if (curIndex + 1 < dyIndex) {
+      for (size_t index = curIndex + 1; index < dyIndex; ++index) {
+        const auto midLeftBound = lanelet::utils::to2D(current_lanelets_[index].leftBound());
+        const auto midRightBound = lanelet::utils::to2D(current_lanelets_[index].rightBound());
+        leftMarkerPoints.reserve(leftMarkerPoints.size() + midLeftBound.size());
+        rightMarkerPoints.reserve(rightMarkerPoints.size() + midRightBound.size());
+        for (auto point : midLeftBound) {
+          leftMarkerPoints.push_back(odd_tools::createPoint(point.basicPoint().x(), 
+                                                            point.basicPoint().y(),
+                                                            0));
+        }
+        for (auto point : midRightBound) {
+          rightMarkerPoints.push_back(odd_tools::createPoint(point.basicPoint().x(), 
+                                                            point.basicPoint().y(),
+                                                            0));
+        }
+      }
+    }
+
+
+    // Operations on the futherest lanelet
+    // get the furtherest point in the furtherest lanelet
+    curLength -= lengthsLaneltes[dyIndex];
     forwardPoint = odd_tools::getFurtherestForwardPoint(current_lanelets_[dyIndex],
                                                         10,
                                                         curLength);
-  }
-  // if the furtherest forward point is in the current lanelet
-  else {
-    const auto leftBound = lanelet::utils::to2D(current_lanelets_[curIndex].leftBound());
-    const auto rightBound = lanelet::utils::to2D(current_lanelets_[curIndex].rightBound());
+    const auto furLeftBound = lanelet::utils::to2D(current_lanelets_[dyIndex].leftBound());
+    const auto furRightBound = lanelet::utils::to2D(current_lanelets_[dyIndex].rightBound());
     
-    const auto resampledLeft = odd_tools::resampleLine(leftBound, 1.0);
-    const auto resampledRight = odd_tools::resampleLine(rightBound, 1.0);
-    
-    const auto leftMarkerPoints = odd_tools::getMarkerPoints(resampledLeft,
-                                                             egoPoint,
-                                                             forwardPoint);
-    const auto rightMarkerPoints = odd_tools::getMarkerPoints(resampledRight,
-                                                              egoPoint,
-                                                              forwardPoint);
-    centerLineMarker.points.insert(centerLineMarker.points.end(), 
-                                   leftMarkerPoints.begin(), leftMarkerPoints.end());
-    centerLineMarker.points.insert(centerLineMarker.points.end(), 
-                                   rightMarkerPoints.rbegin(), rightMarkerPoints.rend());
+    const auto furResampledLeft = odd_tools::resampleLine(furLeftBound, 0.5);
+    const auto furResampledRight = odd_tools::resampleLine(furRightBound, 0.5);
 
+
+    bgPoint leftStartPoint((furResampledLeft.begin() + 1)->position.x,
+                           (furResampledLeft.begin() + 1)->position.y,
+                           (furResampledLeft.begin() + 1)->position.z);
+    bgPoint rightStartPoint((furResampledRight.begin() + 1)->position.x,
+                           (furResampledRight.begin() + 1)->position.y,
+                           (furResampledRight.begin() + 1)->position.z);
+
+    const auto furLeftMarkerPoints = odd_tools::getMarkerPoints(furResampledLeft,
+                                                                leftStartPoint,
+                                                                forwardPoint);
+    const auto furRightMarkerPoints = odd_tools::getMarkerPoints(furResampledRight,
+                                                                rightStartPoint,
+                                                                forwardPoint);
+    leftMarkerPoints.insert(leftMarkerPoints.end(),
+                            furLeftMarkerPoints.begin(),
+                            furLeftMarkerPoints.end());
+    rightMarkerPoints.insert(rightMarkerPoints.end(),
+                             furRightMarkerPoints.begin(),
+                             furRightMarkerPoints.end());
   }
-  
+
+  // ############### Find the furtherest backward point ###############
+
+
+  centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                  leftMarkerPoints.begin(), leftMarkerPoints.end());
+  centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                  rightMarkerPoints.rbegin(), rightMarkerPoints.rend());
   msg.markers.push_back(centerLineMarker);
   return msg;
-
-
 }
 
 MarkerArray OddVisualizer::createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings) {
