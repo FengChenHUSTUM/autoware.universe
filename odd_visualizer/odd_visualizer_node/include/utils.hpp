@@ -150,6 +150,11 @@ namespace odd_tools
                                       const double & fixedLength,
                                       double & curLength,
                                       const double & interval = 1.0);
+    bgPoint getFurtherestBackwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                       const geometry_msgs::msg::Pose & pose,
+                                       const double & fixedLength,
+                                       double & curLength,
+                                       const double & interval = 1.0);
     /**
      * @brief Get the Furtherest Forward Point object
      * 
@@ -164,6 +169,10 @@ namespace odd_tools
                                       const double & fixedLength,
                                       double & curLength,
                                       const double & interval = 1.0);
+    bgPoint getFurtherestBackwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                       const double & fixedLength,
+                                       double & curLength,
+                                       const double & interval = 1.0);
 
     /**
      * @brief Get the Marker Points object from a lanlet boundary

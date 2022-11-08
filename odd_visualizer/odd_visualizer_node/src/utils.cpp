@@ -392,6 +392,68 @@ namespace odd_tools
         }
         return bgPoint(resampledCenterline.end()->position.x, resampledCenterline.end()->position.y, resampledCenterline.end()->position.z);
     }
+    bgPoint getFurtherestBackwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                      const geometry_msgs::msg::Pose & pose,
+                                      const double & fixedLength,
+                                      double & curLength,
+                                      const double & interval)
+    {
+        // current position of the ego
+        const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+
+        const auto resampledCenterline = resampleLine(curCenterLine, interval);
+
+        // find the nearest projected point of the current pose of the ego in the centerline
+        size_t poseInCenterline = 0;
+        double minDis = std::numeric_limits<double>::max();
+        for (size_t i = 0; i < resampledCenterline.size(); ++i) {
+            bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, 0);
+
+            double tmpDis = boost::geometry::distance(point1, egoPoint);
+            if (tmpDis < minDis) {
+            minDis = tmpDis;
+            poseInCenterline = i;
+            }
+        }
+
+        // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
+        // return the furtherest point
+        for (size_t i = poseInCenterline; i > 0; --i) {
+            if (i > 0) {
+            curLength += boost::geometry::distance(bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z),
+                                                    bgPoint(resampledCenterline[i - 1].position.x, resampledCenterline[i - 1].position.y, resampledCenterline[i - 1].position.z));
+            }
+            if (curLength >= fixedLength) {
+            return bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z);
+            }
+        }
+        return bgPoint(resampledCenterline.begin()->position.x, resampledCenterline.begin()->position.y, resampledCenterline.begin()->position.z);
+    }
+
+
+    bgPoint getFurtherestBackwardPoint(const lanelet::ConstLanelet & currentLanelet,
+                                      const double & fixedLength,
+                                      double & curLength,
+                                      const double & interval)
+    {
+        // convert points in current centerline into poses for resampling
+        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto resampledCenterline = resampleLine(curCenterLine, interval);
+
+        // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
+        // return the furtherest point
+        for (size_t i = resampledCenterline.size() - 1; i > 0; --i) {
+            if (i > 0) {
+            curLength += boost::geometry::distance(bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z),
+                                                    bgPoint(resampledCenterline[i - 1].position.x, resampledCenterline[i - 1].position.y, resampledCenterline[i - 1].position.z));
+            }
+            if (curLength >= fixedLength) {
+            return bgPoint(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z);
+            }
+        }
+        return bgPoint(resampledCenterline.begin()->position.x, resampledCenterline.begin()->position.y, resampledCenterline.begin()->position.z);
+    }
 
     std::vector<geometry_msgs::msg::Point> getMarkerPoints(const std::vector<geometry_msgs::msg::Pose> & bound,
                                                            const bgPoint & startPoint,
@@ -424,9 +486,11 @@ namespace odd_tools
             }
         }
         std::vector<geometry_msgs::msg::Point> res;
-        res.reserve(endPointIndex - startPointIndex);
-        for (size_t i = startPointIndex; i < endPointIndex; ++i) {
-            res.push_back(bound[i].position);
+        if (endPointIndex - startPointIndex > 0) {
+            res.reserve(endPointIndex - startPointIndex);
+            for (size_t i = startPointIndex; i < endPointIndex; ++i) {
+                res.push_back(bound[i].position);
+            }
         }
         return res;
     }

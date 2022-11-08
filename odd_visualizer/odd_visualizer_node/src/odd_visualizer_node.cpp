@@ -74,13 +74,19 @@ void OddVisualizer::mapCallback(
 void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr msg) {
     // std::cout <<"odd lanelet sequence call back "<<'\n';
 
-    std::vector<lanelet::ConstLanelet> laneletSequence(msg->lane_ids.size());
+    // std::vector<lanelet::ConstLanelet> laneletSequence(msg->lane_ids.size());
     (*current_lanelet_) = lanelet_map_ptr_->laneletLayer.get(msg->current_lane);
-    int i = 0;
     for (const auto & laneID : msg->lane_ids) {
-        laneletSequence[i++] = lanelet_map_ptr_->laneletLayer.get(laneID);
+      const auto ll = lanelet_map_ptr_->laneletLayer.get(laneID);
+      if (std::find(current_lanelets_.begin(),current_lanelets_.end(), ll) == current_lanelets_.end()) 
+      {
+        current_lanelets_.push_back(ll);
+      }
+        // laneletSequence[i++] = lanelet_map_ptr_->laneletLayer.get(laneID);
+
     }
-    current_lanelets_ = laneletSequence;
+    
+    // current_lanelets_ = laneletSequence;
     odd_elements_->self_pose = self_pose_listener_.getCurrentPose();
     odd_driveable_area_publisher_->publish(createCenterlineInterest());
 
@@ -150,7 +156,7 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
   MarkerArray msg;
   Marker centerLineMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0l, Marker::LINE_STRIP,
-    createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.odd_rgba));
   centerLineMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
 
   Marker poseMarker = createDefaultMarker(
@@ -172,12 +178,13 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
   size_t curIndex = 0;
   // get the arclength of each lanelet in the sequence
   std::vector<double> lengthsLaneltes;
-  lengthsLaneltes.reserve(current_lanelets_.size());
+  // lengthsLaneltes.reserve(current_lanelets_.size());
   for (size_t i = 0; i < current_lanelets_.size(); ++i) {
     if (current_lanelets_[i] == currentLanelet) curIndex = i;
     const auto curllCenterLine = lanelet::utils::to2D(current_lanelets_[i].centerline());
     lengthsLaneltes.push_back(odd_tools::getArcLengthFromPoints(curllCenterLine));
   }
+  // #################################################################
   // ############### Find the furtherest forward point ###############
   auto forwardPoint = odd_tools::getFurtherestForwardPoint(currentLanelet,
                                                            pose,
@@ -254,21 +261,156 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
     const auto furRightMarkerPoints = odd_tools::getMarkerPoints(furResampledRight,
                                                                 rightStartPoint,
                                                                 forwardPoint);
-    leftMarkerPoints.insert(leftMarkerPoints.end(),
-                            furLeftMarkerPoints.begin(),
-                            furLeftMarkerPoints.end());
-    rightMarkerPoints.insert(rightMarkerPoints.end(),
-                             furRightMarkerPoints.begin(),
-                             furRightMarkerPoints.end());
+    if (furLeftMarkerPoints.size() > 0 && furRightMarkerPoints.size() > 0) {
+      leftMarkerPoints.insert(leftMarkerPoints.end(),
+                              furLeftMarkerPoints.begin(),
+                              furLeftMarkerPoints.end());
+      rightMarkerPoints.insert(rightMarkerPoints.end(),
+                              furRightMarkerPoints.begin(),
+                              furRightMarkerPoints.end());
+    }
   }
+  // ############### End of finding the furtherest forward point ###############
+  // ###########################################################################
 
+  // ##################################################################
   // ############### Find the furtherest backward point ###############
+  double backLength = 0;
+  auto backwardPoint = odd_tools::getFurtherestBackwardPoint(currentLanelet,
+                                                           pose,
+                                                           5,
+                                                           backLength);
+  // std::cout << "第一次找完点后的长度： " << backLength <<"\n";
+  // operations on current lanelet                       
+  // const auto curLeftBound = lanelet::utils::to2D(current_lanelets_[curIndex].leftBound());
+  // const auto curRightBound = lanelet::utils::to2D(current_lanelets_[curIndex].rightBound());
+  
+  // const auto curResampledLeft = odd_tools::resampleLine(curLeftBound, 0.5);
+  // const auto curResampledRight = odd_tools::resampleLine(curRightBound, 0.5);
+
+  auto backLeftMarkerPoints = odd_tools::getMarkerPoints(curResampledLeft,
+                                                     backwardPoint,
+                                                     egoPoint);
+  auto backRightMarkerPoints = odd_tools::getMarkerPoints(curResampledRight,
+                                                     backwardPoint,
+                                                     egoPoint);
+
+  // If the furtherest forward point is not in the current lanelet
+  size_t backIndex = curIndex; // the furtherest lanelet
+  // find out in which lanelet the furtherest point is
+  // if (false) {
+  if (backIndex > 0 && backLength < 5) {
+    while (backIndex > 0 && backLength < 5) {
+      backIndex--;
+      backLength += lengthsLaneltes[backIndex];
+    }
+
+    // std::cout << "curIndex: " << curIndex << "; backIndex: "<< backIndex<<"\n";
+
+    // Operations on lanelets between the current lanelet and the furtherest lanelet:
+    // push back the boundary line strings of the lanelets before the furtherest lanelet
+    if (curIndex - 1 > backIndex) {
+      for (size_t index = curIndex - 1; index > backIndex; --index) {
+        const auto midLeftBound = lanelet::utils::to2D(current_lanelets_[index].leftBound());
+        const auto midRightBound = lanelet::utils::to2D(current_lanelets_[index].rightBound());
+        // backLeftMarkerPoints.resize(backLeftMarkerPoints.size() + midLeftBound.size());
+        // backRightMarkerPoints.resize(backRightMarkerPoints.size() + midRightBound.size());
+        for (auto point : midLeftBound) {
+          backLeftMarkerPoints.insert(backLeftMarkerPoints.begin(),
+                                      odd_tools::createPoint(point.basicPoint().x(), 
+                                                            point.basicPoint().y(),
+                                                            0));
+        }
+        for (auto point : midRightBound) {
+          backRightMarkerPoints.insert(backRightMarkerPoints.begin(),
+                                      odd_tools::createPoint(point.basicPoint().x(), 
+                                                            point.basicPoint().y(),
+                                                            0));
+        }
+      }
+    }
 
 
-  centerLineMarker.points.insert(centerLineMarker.points.end(), 
-                                  leftMarkerPoints.begin(), leftMarkerPoints.end());
-  centerLineMarker.points.insert(centerLineMarker.points.end(), 
-                                  rightMarkerPoints.rbegin(), rightMarkerPoints.rend());
+    // Operations on the futherest lanelet
+    // get the furtherest point in the furtherest lanelet
+    backLength -= lengthsLaneltes[backIndex];
+      // std::cout <<  "\n#################### Debug ####################"
+      //           << "\n当前减完以后长度: " << backLength << "\n"
+      //           << "arclength of current back lanelet: " << lengthsLaneltes[backIndex]
+      //           << "\nbackIndex: " << backIndex << '\n';
+
+    backwardPoint = odd_tools::getFurtherestBackwardPoint(current_lanelets_[backIndex],
+                                                        5,
+                                                        backLength);
+    // std::cout << "backward point found"<<'\n'
+    //           << "当前长度： " << backLength<<'\n';
+    const auto backLeftBound = lanelet::utils::to2D(current_lanelets_[backIndex].leftBound());
+    const auto backRightBound = lanelet::utils::to2D(current_lanelets_[backIndex].rightBound());
+    
+    const auto furBackResampledLeft = odd_tools::resampleLine(backLeftBound, 0.5);
+    const auto furBackResampledRight = odd_tools::resampleLine(backRightBound, 0.5);
+    // std::cout << "重采样后当前lanelet点的数量: Left:" << furBackResampledLeft.size()
+    //           << "\nRight: " << furBackResampledRight.size() << "\n";
+
+    bgPoint leftEndPoint((furBackResampledLeft.end() - 1)->position.x,
+                           (furBackResampledLeft.end() - 1)->position.y,
+                           0);
+    bgPoint rightEndPoint((furBackResampledRight.end() - 1)->position.x,
+                           (furBackResampledRight.end() - 1)->position.y,
+                           0);
+
+    std::vector<geometry_msgs::msg::Point> furBackLeftMarkerPoints;
+    std::vector<geometry_msgs::msg::Point> furBackRightMarkerPoints;
+    if (boost::geometry::distance(backwardPoint, leftEndPoint) > 0.1 &&
+        boost::geometry::distance(backwardPoint, rightEndPoint) > 0.1) {
+          // std::cout << "backward point和左侧终点距离:\n " << boost::geometry::distance(backwardPoint, leftEndPoint)
+          //           << "\nbackward point和右侧终点距离:\n " << boost::geometry::distance(backwardPoint, rightEndPoint)
+          //           << "\n";
+      furBackLeftMarkerPoints = odd_tools::getMarkerPoints (furBackResampledLeft,
+                                                            backwardPoint,
+                                                            leftEndPoint);
+      furBackRightMarkerPoints = odd_tools::getMarkerPoints(furBackResampledRight,
+                                                            backwardPoint,
+                                                            rightEndPoint);
+      // std::cout << "可视化的点数量: \nLeft:" << furBackLeftMarkerPoints.size()
+      //           << "\nRight: " << furBackRightMarkerPoints.size() << "\n"
+      //           <<  "#################### END ####################\n";
+      }
+
+
+    // backLeftMarkerPoints.reserve(backLeftMarkerPoints.size() + furBackLeftMarkerPoints.size());                                                
+    // backRightMarkerPoints.reserve(backRightMarkerPoints.size() + furBackRightMarkerPoints.size()); 
+    if (furBackLeftMarkerPoints.size() != 0 && furBackRightMarkerPoints.size() != 0) {
+      backLeftMarkerPoints.insert(backLeftMarkerPoints.begin(),
+                              furBackLeftMarkerPoints.begin(),
+                              furBackLeftMarkerPoints.end());
+      backRightMarkerPoints.insert(backRightMarkerPoints.begin(),
+                              furBackRightMarkerPoints.begin(),
+                              furBackRightMarkerPoints.end());
+    }
+  }
+  // ############### End of finding the furtherest backward point ###############
+  // ############################################################################
+
+  if (backLeftMarkerPoints.size() > 0 &&
+      leftMarkerPoints.size() > 0 &&
+      rightMarkerPoints.size() > 0 &&
+      backRightMarkerPoints.size() > 0)
+  {
+    centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                    backLeftMarkerPoints.begin(), backLeftMarkerPoints.end());
+    centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                    leftMarkerPoints.begin(), leftMarkerPoints.end());
+    centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                    rightMarkerPoints.rbegin(), rightMarkerPoints.rend());
+    centerLineMarker.points.insert(centerLineMarker.points.end(), 
+                                    backRightMarkerPoints.rbegin(), backRightMarkerPoints.rend());
+    centerLineMarker.points.insert(centerLineMarker.points.end(), backLeftMarkerPoints[0]);
+  }
+  else {
+    std::cout <<"Error when create the markers!" <<std::endl;
+  }
+                                  
   msg.markers.push_back(centerLineMarker);
   return msg;
 }
