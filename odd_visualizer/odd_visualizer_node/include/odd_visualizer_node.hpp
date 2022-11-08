@@ -62,11 +62,7 @@ using tier4_autoware_utils::createMarkerScale;
 using tier4_autoware_utils::createPoint;
 using visualization_msgs::msg::Marker;
 using geometry_msgs::msg::Point;
-// using scenery_msgs::msg::EdgeData;
-// using scenery_msgs::msg::LaneData;
-// using scenery_msgs::msg::RegulatoryEleData;
 using scenery_msgs::msg::laneSequenceWithID;
-// using odd_tools::ODD_elements;
 
 
 using autoware_auto_mapping_msgs::msg::HADMapBin;
@@ -84,9 +80,6 @@ private:
     rclcpp::Subscription<laneSequenceWithID>::SharedPtr lanelet_sequence_subscriber_;
 
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_driveable_area_publisher_;
-    // rclcpp::Publisher<EdgeData>::SharedPtr odd_edge_publisher_;
-    // rclcpp::Publisher<LaneData>::SharedPtr odd_roadLane_publisher_;
-    // rclcpp::Publisher<RegulatoryEleData>::SharedPtr odd_regulatory_elements_publisher_;
 
     tier4_autoware_utils::SelfPoseListener self_pose_listener_{this};
 
@@ -105,22 +98,6 @@ private:
     lanelet::ConstLanelets all_lanelets_;
     lanelet::ConstLanelets current_lanelets_;
     std::shared_ptr<lanelet::ConstLanelet> current_lanelet_;
-
-    // lanetype
-    lanelet::ConstLanelets road_lanelets_;
-    lanelet::ConstLanelets walkway_lanelets_;
-    lanelet::ConstLanelets crosswalk_lanelets_;
-    lanelet::ConstLanelets bus_lanelets_;
-    lanelet::ConstLanelets bicycle_lanelets_;
-    lanelet::ConstLanelets emergency_lanelets_;
-    
-
-    // TODO: move all ODD elements into odd_elements_
-    // regulatary elements
-    lanelet::TrafficLightConstPtr trafficLights_;
-
-    // edge
-    lanelet::ConstLanelet roadShoulder_edge;
 
     /**
      * @brief convert lanelet2 into Polygons in the format of geometry message.
@@ -148,29 +125,10 @@ private:
 
     void getODDFromMap(const lanelet::ConstLanelets laneletSequence);
     void onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet);
-    MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLineStrings3d & linestrings);
-    MarkerArray createDrivableAreaMarkerArray(const lanelet::ConstLanelets laneletSequence,
-                                              const odd_tools::BoundaryInfo boundInfo);
     MarkerArray createCenterlineInterest();
-
     std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
     void getColorConfig(odd_tools::odd_colorRGBA &odd_color);
     odd_tools::ODD_elements getParam();
-    
-
-    // // lane msgs
-    // scenery_msgs::msg::LaneData createRoadLaneMsg();
-    // scenery_msgs::msg::LaneData createWalkWayLaneMsg();
-    // scenery_msgs::msg::LaneData createCrossWalkLaneMsg();
-    // scenery_msgs::msg::LaneData createBUSLaneMsg();
-    // scenery_msgs::msg::LaneData createBicycleLaneMsg();
-    // scenery_msgs::msg::LaneData createEmergencyLaneMsg();
-
-    // regulatary elements msgs
-
-
-    // edge msgs
-
 };
 } // namespace odd_visualizer
 
