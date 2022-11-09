@@ -130,7 +130,6 @@ private:
     MarkerArray createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points);
 
     std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
-    void getColorConfig(odd_tools::odd_colorRGBA &odd_color);
     odd_tools::ODD_elements getParam();
 };
 } // namespace odd_visualizer

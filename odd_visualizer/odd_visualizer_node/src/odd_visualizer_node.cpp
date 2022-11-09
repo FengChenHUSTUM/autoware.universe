@@ -37,18 +37,18 @@ std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(odd_tools::odd_colorRGBA
   return colorConfig;
 }
 
-void OddVisualizer::getColorConfig(odd_tools::odd_colorRGBA &odd_color) {
-  // RCLCPP_INFO(get_logger(), "Get Params Func Called!");
-  odd_color.r = declare_parameter<float>("color_rgba_r");
-  odd_color.g = declare_parameter<float>("color_rgba_g");
-  odd_color.b = declare_parameter<float>("color_rgba_b");
-  odd_color.a = declare_parameter<float>("color_rgba_a");
-}
-
-
 odd_tools::ODD_elements OddVisualizer::getParam() {
   odd_tools::ODD_elements elements{};
-  getColorConfig(elements.params.odd_rgba);
+
+  elements.params.odd_color.r = declare_parameter<float>("color_rgba_r");
+  elements.params.odd_color.g = declare_parameter<float>("color_rgba_g");
+  elements.params.odd_color.b = declare_parameter<float>("color_rgba_b");
+  elements.params.odd_color.a = declare_parameter<float>("color_rgba_a");
+
+  elements.params.oppositeLane_rgba.r = declare_parameter<float>("color_opposite_rgba_r");
+  elements.params.oppositeLane_rgba.g = declare_parameter<float>("color_opposite_rgba_g");
+  elements.params.oppositeLane_rgba.b = declare_parameter<float>("color_opposite_rgba_b");
+  elements.params.oppositeLane_rgba.a = declare_parameter<float>("color_opposite_rgba_a");
   return elements;
 }
 
@@ -340,7 +340,7 @@ MarkerArray OddVisualizer::createAdjacentLaneBoundary(const std::vector<geometry
   MarkerArray msg;
   Marker laneBoundaryMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "opposite_lanelets", 3l, Marker::LINE_STRIP,
-    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.oppositeLane_rgba));
   laneBoundaryMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
   laneBoundaryMarker.points.insert(laneBoundaryMarker.points.end(), points.begin(), points.end());
   msg.markers.push_back(laneBoundaryMarker);
@@ -389,18 +389,20 @@ void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet
 
   const auto & leftOpp = odd_tools::getLeftOppositeLanelets(currentLanelet, lanelet_map_ptr_);
   const auto & rightOpp = odd_tools::getRightOppositeLanelets(currentLanelet, lanelet_map_ptr_);
-
+  // TODO: extend the opposite lanelet to be dynamic
+  // 1. the range should be twice larger than the fixed range
+  // 2. to make it more practicle, we could only consider about the forward lanelets
   if (!rightOpp.empty()) {
-    std::cout <<"size of rightOpp: " << rightOpp.size() <<'\n';
+    // std::cout <<"size of rightOpp: " << rightOpp.size() <<'\n';
     const auto rightOppoLine = odd_tools::getLaneMarkerPointsFromLanelets(rightOpp);
-    std::cout << "size of the line to be passed to the msg: " <<rightOppoLine.size() << '\n';
-    int i = 0;
-    for (auto index : rightOppoLine) {
-      std::cout << "\nx" << i <<" = "<< index.x << "\n"
-                << "y" << i <<" = "<< index.y << "\n";
-                i++;
+    // std::cout << "size of the line to be passed to the msg: " <<rightOppoLine.size() << '\n';
+    // int i = 0;
+    // for (auto index : rightOppoLine) {
+    //   std::cout << "\nx" << i <<" = "<< index.x << "\n"
+    //             << "y" << i <<" = "<< index.y << "\n";
+    //             i++;
 
-    }
+    // }
     odd_adjacent_lane_publisher_->publish(createAdjacentLaneBoundary(rightOppoLine));
   }
 }

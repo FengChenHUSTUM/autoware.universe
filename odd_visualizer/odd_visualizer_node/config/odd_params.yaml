@@ -4,3 +4,8 @@ odd_visualizer_node:
     color_rgba_g : 114.0
     color_rgba_b : 227.0
     color_rgba_a : 0.9
+
+    color_opposite_rgba_r: 23.0
+    color_opposite_rgba_g: 81.0
+    color_opposite_rgba_b: 217.0
+    color_opposite_rgba_a: 0.9

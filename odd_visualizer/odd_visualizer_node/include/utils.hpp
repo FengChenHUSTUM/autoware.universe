@@ -37,6 +37,7 @@ namespace odd_tools
         float forward_path_length = 20.0;
         float backward_path_length = 10.0;
         odd_colorRGBA odd_rgba{};
+        odd_colorRGBA oppositeLane_rgba{};
     };
     struct ODD_elements {
         tuning_params params{};
