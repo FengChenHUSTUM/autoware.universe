@@ -80,6 +80,7 @@ private:
     rclcpp::Subscription<laneSequenceWithID>::SharedPtr lanelet_sequence_subscriber_;
 
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_driveable_area_publisher_;
+    rclcpp::Publisher<MarkerArray>::SharedPtr odd_adjacent_lane_publisher_;
 
     tier4_autoware_utils::SelfPoseListener self_pose_listener_{this};
 
@@ -125,7 +126,9 @@ private:
 
     void getODDFromMap(const lanelet::ConstLanelets laneletSequence);
     void onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet);
-    MarkerArray createCenterlineInterest();
+    MarkerArray createDriveableAreaBoundary();
+    MarkerArray createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points);
+
     std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
     void getColorConfig(odd_tools::odd_colorRGBA &odd_color);
     odd_tools::ODD_elements getParam();

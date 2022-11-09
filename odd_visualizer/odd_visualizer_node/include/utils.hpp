@@ -74,18 +74,9 @@ namespace odd_tools
          lanelet::routing::RoutingGraphPtr routing_graph_ptr_,
          lanelet::LaneletMapPtr lanelet_map_ptr_);
 
-    // Geometry functions
-    struct BoundaryInfo {
-        size_t posePointIDLanelet{0};
-        size_t furtherestLaneletId{0};
-        size_t furtherestPointId{0};
-    };
-    BoundaryInfo getBoundaryLineString(
-        const lanelet::ConstLanelets laneletSequence,
-        const lanelet::ConstLanelet currentLanelet,
-        const geometry_msgs::msg::Pose & pose,
-        const double forwardLength,
-        const double backwardLength);
+
+    std::vector<geometry_msgs::msg::Point> getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets);
+
     size_t getRightProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
                                     const size_t & pointID);
     size_t getLeftProjectedPointId(const lanelet::ConstLanelet & currentLanelet,

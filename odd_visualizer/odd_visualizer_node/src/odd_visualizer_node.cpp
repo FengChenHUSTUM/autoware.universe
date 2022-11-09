@@ -11,8 +11,8 @@ OddVisualizer::OddVisualizer(
     current_lanelet_ = std::make_shared<lanelet::ConstLanelet>();
     //TODO: edit topic path in configuration file
     std::cout << "odd node loaded! "<<'\n';
-    odd_driveable_area_publisher_ = 
-        create_publisher<MarkerArray>("/odd_parameter/odd_drivable_area", 1);
+    odd_driveable_area_publisher_ = create_publisher<MarkerArray>("/odd_parameter/odd_drivable_area", 1);
+    odd_adjacent_lane_publisher_ = create_publisher<MarkerArray>("/odd_parameter/adjacent_lane", 1);
 
 
     map_subscriber_ = this->create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
@@ -86,11 +86,13 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
         current_lanelets_.push_back(ll);
       }
     }
-    odd_driveable_area_publisher_->publish(createCenterlineInterest());
+    odd_driveable_area_publisher_->publish(createDriveableAreaBoundary());
+    onAdjacentLanelet(*current_lanelet_);
+    // getODDFromMap(current_lanelets_);
   }
 }
 
-MarkerArray OddVisualizer::createCenterlineInterest() {
+MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   MarkerArray msg;
   Marker centerLineMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0l, Marker::LINE_STRIP,
@@ -334,6 +336,17 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
   return msg;
 }
 
+MarkerArray OddVisualizer::createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points) {
+  MarkerArray msg;
+  Marker laneBoundaryMarker = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "opposite_lanelets", 3l, Marker::LINE_STRIP,
+    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+  laneBoundaryMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
+  laneBoundaryMarker.points.insert(laneBoundaryMarker.points.end(), points.begin(), points.end());
+  msg.markers.push_back(laneBoundaryMarker);
+  return msg;
+}
+
 void OddVisualizer::lanletToPolygonMsg(
         const lanelet::ConstLanelet & ll,
         geometry_msgs::msg::Polygon * polygon) {
@@ -367,60 +380,30 @@ void OddVisualizer::getODDFromMap(const lanelet::ConstLanelets laneletSequence)
 
 void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet)
 {
-  const auto rightLanelet = routing_graph_ptr_->right(currentLanelet);
-  const auto leftLanelets = routing_graph_ptr_->leftRelations(currentLanelet);
-  const auto rightLanelets = routing_graph_ptr_->rightRelations(currentLanelet);
-  //TODO: get Left Opposite Lanelets 
-  std::cout << "##### left relationed lanelet #####\n";
+  if (routing_graph_ptr_->adjacentRight(currentLanelet)) std::cout << "adjacentleft\n" ;
+  if (routing_graph_ptr_->adjacentLeft(currentLanelet)) std::cout << "adjacenright\n" ;
+  if (routing_graph_ptr_->left(currentLanelet)) std::cout << "left\n" ;
+  if (routing_graph_ptr_->right(currentLanelet)) std::cout << "right\n" ;
+  const auto & sameLeft = odd_tools::getLeftLanelet(currentLanelet, routing_graph_ptr_);
+  const auto & sameRight = odd_tools::getRightLanelet(currentLanelet, routing_graph_ptr_);
 
-  for (auto index : leftLanelets) 
-  {
-    switch (index.relationType)
-    {
-    case lanelet::routing::RelationType::Successor: std::cout << "Successor"<<'\n'; break;
-    case lanelet::routing::RelationType::Left: std::cout << "Left"<<'\n'; break;
-    case lanelet::routing::RelationType::Right: std::cout << "Right"<<'\n'; break;
-    case lanelet::routing::RelationType::AdjacentLeft: std::cout << "AdjacentLeft"<<'\n'; break;
-    case lanelet::routing::RelationType::AdjacentRight: std::cout << "AdjacentRight"<<'\n'; break;
-    case lanelet::routing::RelationType::Conflicting: std::cout << "Conflicting"<<'\n'; break;
-    case lanelet::routing::RelationType::Area: std::cout << "Area"<<'\n'; break;
-    case lanelet::routing::RelationType::None: std::cout << "None"<<'\n'; break;
-    default:
-      break;
+  const auto & leftOpp = odd_tools::getLeftOppositeLanelets(currentLanelet, lanelet_map_ptr_);
+  const auto & rightOpp = odd_tools::getRightOppositeLanelets(currentLanelet, lanelet_map_ptr_);
+
+  if (!rightOpp.empty()) {
+    std::cout <<"size of rightOpp: " << rightOpp.size() <<'\n';
+    const auto rightOppoLine = odd_tools::getLaneMarkerPointsFromLanelets(rightOpp);
+    std::cout << "size of the line to be passed to the msg: " <<rightOppoLine.size() << '\n';
+    int i = 0;
+    for (auto index : rightOppoLine) {
+      std::cout << "\nx" << i <<" = "<< index.x << "\n"
+                << "y" << i <<" = "<< index.y << "\n";
+                i++;
+
     }
+    odd_adjacent_lane_publisher_->publish(createAdjacentLaneBoundary(rightOppoLine));
   }
-  std::cout << "##### End #####\n";
-
-  std::cout << "##### right relationed lanelet #####\n";
-  for (auto index : rightLanelets) 
-  {
-    switch (index.relationType)
-    {
-    case lanelet::routing::RelationType::Successor: std::cout << "Successor"<<'\n'; break;
-    case lanelet::routing::RelationType::Left: std::cout << "Left"<<'\n'; break;
-    case lanelet::routing::RelationType::Right: std::cout << "Right"<<'\n'; break;
-    case lanelet::routing::RelationType::AdjacentLeft: std::cout << "AdjacentLeft"<<'\n'; break;
-    case lanelet::routing::RelationType::AdjacentRight: std::cout << "AdjacentRight"<<'\n'; break;
-    case lanelet::routing::RelationType::Conflicting: std::cout << "Conflicting"<<'\n'; break;
-    case lanelet::routing::RelationType::Area: std::cout << "Area"<<'\n'; break;
-    case lanelet::routing::RelationType::None: std::cout << "None"<<'\n'; break;
-    default:
-      break;
-    }
-  }
-  std::cout << "##### End #####\n";
-
-  if (rightLanelet) {
-    std::cout << "##### right adjacent lanelet #####\n";
-    odd_tools::onNonDrivableLane(rightLanelet.value());
-    odd_tools::onEdge(rightLanelet.value());
-    odd_tools::onFixedRoadStructures(rightLanelet.value());
-    odd_tools::onRegulations(rightLanelet.value());
-    std::cout << "##### End #####\n";
-  }
-
 }
-
 } // namespace odd_visualizer
 
 
