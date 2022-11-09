@@ -487,7 +487,7 @@ namespace odd_tools
         }
         std::vector<geometry_msgs::msg::Point> res;
         if (endPointIndex - startPointIndex > 0) {
-            res.reserve(endPointIndex - startPointIndex);
+            // res.reserve(endPointIndex - startPointIndex);
             for (size_t i = startPointIndex; i < endPointIndex; ++i) {
                 res.push_back(bound[i].position);
             }

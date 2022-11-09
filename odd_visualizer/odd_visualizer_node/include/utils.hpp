@@ -95,6 +95,12 @@ namespace odd_tools
                                   const geometry_msgs::msg::Pose & currentPose,
                                   const lanelet::ConstLanelet & currentLanelet);
 
+    inline bool isNewPoseSet(const geometry_msgs::msg::PoseStamped* oldPose,
+                             const geometry_msgs::msg::PoseStamped* newPose)
+    {
+        return (abs(oldPose->pose.position.x - newPose->pose.position.x) +
+                abs(oldPose->pose.position.y - newPose->pose.position.y) > 20);
+    }
     inline lanelet::ConstPoint3d toLaneletPoint(const geometry_msgs::msg::Point & pose)
     {
         return lanelet::Point3d(lanelet::InvalId, pose.x, pose.y, pose.z);

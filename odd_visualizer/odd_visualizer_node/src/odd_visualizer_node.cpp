@@ -63,8 +63,22 @@ void OddVisualizer::mapCallback(
 }
 
 void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr msg) {
-
-    (*current_lanelet_) = lanelet_map_ptr_->laneletLayer.get(msg->current_lane);
+  (*current_lanelet_) = lanelet_map_ptr_->laneletLayer.get(msg->current_lane);
+  bool newPoseSet = false;
+  if (odd_elements_->self_pose.get() != nullptr){
+    newPoseSet = odd_tools::isNewPoseSet(odd_elements_->self_pose.get(),
+                                         self_pose_listener_.getCurrentPose().get());
+    if (newPoseSet) {
+      current_lanelets_.resize(0);
+      newPoseSet = false;
+    }
+  }
+  odd_elements_->self_pose = self_pose_listener_.getCurrentPose();
+  // when a new estimated location of the ego is set but the goal position is not set, 
+  // the current lanelt will be added into the route. This means the size of current 
+  // lanlets is one at this moment To avoid memory leak and make this pkg not died, 
+  // the check condition should be like the following
+  if (msg->lane_ids.size() > 1) {
     for (const auto & laneID : msg->lane_ids) {
       const auto ll = lanelet_map_ptr_->laneletLayer.get(laneID);
       if (std::find(current_lanelets_.begin(),current_lanelets_.end(), ll) == current_lanelets_.end()) 
@@ -72,10 +86,8 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
         current_lanelets_.push_back(ll);
       }
     }
-    
-    odd_elements_->self_pose = self_pose_listener_.getCurrentPose();
     odd_driveable_area_publisher_->publish(createCenterlineInterest());
-
+  }
 }
 
 MarkerArray OddVisualizer::createCenterlineInterest() {
@@ -145,8 +157,8 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
       for (size_t index = curIndex + 1; index < dyIndex; ++index) {
         const auto midLeftBound = lanelet::utils::to2D(current_lanelets_[index].leftBound());
         const auto midRightBound = lanelet::utils::to2D(current_lanelets_[index].rightBound());
-        leftMarkerPoints.reserve(leftMarkerPoints.size() + midLeftBound.size());
-        rightMarkerPoints.reserve(rightMarkerPoints.size() + midRightBound.size());
+        // leftMarkerPoints.reserve(leftMarkerPoints.size() + midLeftBound.size());
+        // rightMarkerPoints.reserve(rightMarkerPoints.size() + midRightBound.size());
         for (auto point : midLeftBound) {
           leftMarkerPoints.push_back(odd_tools::createPoint(point.basicPoint().x(), 
                                                             point.basicPoint().y(),
@@ -281,8 +293,6 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
 
       }
 
-
-
     if (furBackLeftMarkerPoints.size() != 0 && furBackRightMarkerPoints.size() != 0) {
       backLeftMarkerPoints.insert(backLeftMarkerPoints.begin(),
                               furBackLeftMarkerPoints.begin(),
@@ -311,7 +321,13 @@ MarkerArray OddVisualizer::createCenterlineInterest() {
     centerLineMarker.points.insert(centerLineMarker.points.end(), backLeftMarkerPoints[0]);
   }
   else {
-    std::cout <<"Error when create the markers!" <<std::endl;
+    std::cout << "Error when create the markers!"
+              << "\nbackLeftMarkerPoints.size: " << backLeftMarkerPoints.size()
+              << "\nforwardLeftMarkerPoints.size: " << leftMarkerPoints.size()
+              << "\nforwardRightMarkerPoints.size: " << rightMarkerPoints.size()
+              << "\nbackRightMarkerPoints: " << backRightMarkerPoints.size()
+              << '\n';
+
   }
                                   
   msg.markers.push_back(centerLineMarker);
