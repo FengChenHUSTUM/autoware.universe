@@ -43,7 +43,6 @@ std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(const std::vector<int64_
 
 odd_tools::ODD_elements OddVisualizer::getParam() {
   odd_tools::ODD_elements elements{};
-
   elements.params.odd_rgb = declare_parameter<std::vector<int64_t>>("color_configs.rgb_tum_blue");
   elements.params.oppositeLane_rgb = declare_parameter<std::vector<int64_t>>("color_configs.rgb_tum_red");
   return elements;
@@ -111,8 +110,6 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
   
   double curLength = 0;
-  // the postion of current lanelet in the lanelet sequence
-  size_t curIndex = 0;
   // get the arclength of each lanelet in the sequence
   std::vector<double> lengthsLaneltes;
   // lengthsLaneltes.reserve(current_lanelets_.size());
@@ -377,29 +374,28 @@ void OddVisualizer::getODDFromMap(const lanelet::ConstLanelets laneletSequence)
 
 void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet)
 {
-  if (routing_graph_ptr_->adjacentRight(currentLanelet)) std::cout << "adjacentleft\n" ;
-  if (routing_graph_ptr_->adjacentLeft(currentLanelet)) std::cout << "adjacenright\n" ;
-  if (routing_graph_ptr_->left(currentLanelet)) std::cout << "left\n" ;
-  if (routing_graph_ptr_->right(currentLanelet)) std::cout << "right\n" ;
   const auto & sameLeft = odd_tools::getLeftLanelet(currentLanelet, routing_graph_ptr_);
   const auto & sameRight = odd_tools::getRightLanelet(currentLanelet, routing_graph_ptr_);
 
-  const auto & leftOpp = odd_tools::getLeftOppositeLanelets(currentLanelet, lanelet_map_ptr_);
-  const auto & rightOpp = odd_tools::getRightOppositeLanelets(currentLanelet, lanelet_map_ptr_);
+  lanelet::Lanelets leftOppositeLanletes;
+  lanelet::Lanelets rightOppositeLanletes;
+
+  for (size_t i = curIndex; i < current_lanelets_.size(); ++i) {
+    auto rightOpp = odd_tools::getRightOppositeLanelets(current_lanelets_[i], lanelet_map_ptr_);
+    std::reverse(rightOpp.begin(), rightOpp.end());
+    if (!rightOpp.empty()){
+      for (auto & ll : rightOpp) {
+        if (std::find(rightOppositeLanletes.begin(), rightOppositeLanletes.end(), ll) == rightOppositeLanletes.end()) {
+          rightOppositeLanletes.push_back(ll);
+        }
+      }
+    }
+  }
   // TODO: extend the opposite lanelet to be dynamic
   // 1. the range should be twice larger than the fixed range
   // 2. to make it more practicle, we could only consider about the forward lanelets
-  if (!rightOpp.empty()) {
-    // std::cout <<"size of rightOpp: " << rightOpp.size() <<'\n';
-    const auto rightOppoLine = odd_tools::getLaneMarkerPointsFromLanelets(rightOpp);
-    // std::cout << "size of the line to be passed to the msg: " <<rightOppoLine.size() << '\n';
-    // int i = 0;
-    // for (auto index : rightOppoLine) {
-    //   std::cout << "\nx" << i <<" = "<< index.x << "\n"
-    //             << "y" << i <<" = "<< index.y << "\n";
-    //             i++;
-
-    // }
+  if (!rightOppositeLanletes.empty()) {
+    const auto rightOppoLine = odd_tools::getLaneMarkerPointsFromLanelets(rightOppositeLanletes);
     odd_adjacent_lane_publisher_->publish(createAdjacentLaneBoundary(rightOppoLine));
   }
 }

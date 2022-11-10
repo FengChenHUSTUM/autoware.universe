@@ -134,20 +134,22 @@ namespace odd_tools
         return {};
     }
 
-    std::vector<geometry_msgs::msg::Point> getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets) {
+    std::vector<geometry_msgs::msg::Point>  getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets) {
         std::vector<geometry_msgs::msg::Point> res;
         if (lanelets.size() > 1)
-        {res.push_back(createPoint(lanelets.begin()->rightBound().basicLineString().begin()->x(),
-                                  lanelets.begin()->rightBound().basicLineString().begin()->y(),
-                                  lanelets.begin()->rightBound().basicLineString().begin()->z()));
+        {res.push_back(createPoint((lanelets.begin()->rightBound().basicLineString().end() - 1)->x(),
+                                  (lanelets.begin()->rightBound().basicLineString().end() - 1)->y(),
+                                  (lanelets.begin()->rightBound().basicLineString().end() - 1)->z()));
         for (auto & ll : lanelets) {
-            for (auto & point : ll.leftBound().basicLineString()) {
-                res.push_back(createPoint(point.x(), point.y(), point.z()));
+            const auto lineString = ll.leftBound().basicLineString();
+            for (auto point = lineString.rbegin(); point != lineString.rend(); point++) {
+                res.push_back(createPoint(point->x(), point->y(), point->z()));
             }
         }
-        res.push_back(createPoint(lanelets.end()->rightBound().basicLineString().end()->x(),
-                                  lanelets.end()->rightBound().basicLineString().end()->y(),
-                                  lanelets.end()->rightBound().basicLineString().end()->z()));}
+        res.push_back(createPoint((lanelets.rbegin()->rightBound().basicLineString().begin())->x(),
+                                (lanelets.rbegin()->rightBound().basicLineString().begin())->y(),
+                                (lanelets.rbegin()->rightBound().basicLineString().begin())->z()));
+        }
         else {
             res.push_back(createPoint(lanelets[0].rightBound().basicLineString().begin()->x(),
                                   lanelets[0].rightBound().basicLineString().begin()->y(),

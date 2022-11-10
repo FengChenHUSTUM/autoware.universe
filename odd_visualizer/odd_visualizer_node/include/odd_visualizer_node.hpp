@@ -99,6 +99,8 @@ private:
     lanelet::ConstLanelets all_lanelets_;
     lanelet::ConstLanelets current_lanelets_;
     std::shared_ptr<lanelet::ConstLanelet> current_lanelet_;
+  // the postion of current lanelet in the lanelet sequence
+    size_t curIndex{0};
 
     /**
      * @brief convert lanelet2 into Polygons in the format of geometry message.
