@@ -28,27 +28,24 @@ void OddVisualizer::run() {
     
 }
 
-std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color) {
+std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(const std::vector<int64_t> &odd_color) {
   std_msgs::msg::ColorRGBA colorConfig;
-  colorConfig.r = odd_color.r;
-  colorConfig.g = odd_color.g;
-  colorConfig.b = odd_color.b;
-  colorConfig.a = odd_color.a;
+  if (odd_color.size() == 3) {
+    colorConfig.r = (float)odd_color[0] / 255.0;
+    colorConfig.g = (float)odd_color[1] / 255.0;
+    colorConfig.b = (float)odd_color[2] / 255.0;
+    colorConfig.a = 0.9;
+  }
+  else std::cerr << "color config size error\n";
+
   return colorConfig;
 }
 
 odd_tools::ODD_elements OddVisualizer::getParam() {
   odd_tools::ODD_elements elements{};
 
-  elements.params.odd_color.r = declare_parameter<float>("color_rgba_r");
-  elements.params.odd_color.g = declare_parameter<float>("color_rgba_g");
-  elements.params.odd_color.b = declare_parameter<float>("color_rgba_b");
-  elements.params.odd_color.a = declare_parameter<float>("color_rgba_a");
-
-  elements.params.oppositeLane_rgba.r = declare_parameter<float>("color_opposite_rgba_r");
-  elements.params.oppositeLane_rgba.g = declare_parameter<float>("color_opposite_rgba_g");
-  elements.params.oppositeLane_rgba.b = declare_parameter<float>("color_opposite_rgba_b");
-  elements.params.oppositeLane_rgba.a = declare_parameter<float>("color_opposite_rgba_a");
+  elements.params.odd_rgb = declare_parameter<std::vector<int64_t>>("color_configs.rgb_tum_blue");
+  elements.params.oppositeLane_rgb = declare_parameter<std::vector<int64_t>>("color_configs.rgb_tum_red");
   return elements;
 }
 
@@ -96,12 +93,12 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   MarkerArray msg;
   Marker centerLineMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "shared_linestring_lanelets", 0l, Marker::LINE_STRIP,
-    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.odd_rgb));
   centerLineMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
 
   Marker poseMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "ego_pose", 0l, Marker::SPHERE,
-    createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.odd_rgba));
+    createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.odd_rgb));
   // double forwardLength = odd_elements_->params.forward_path_length;
   // const lanelet::ConstLanelets laneletSequence = current_lanelets_;
   const lanelet::ConstLanelet currentLanelet = *current_lanelet_;
@@ -340,7 +337,7 @@ MarkerArray OddVisualizer::createAdjacentLaneBoundary(const std::vector<geometry
   MarkerArray msg;
   Marker laneBoundaryMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "opposite_lanelets", 3l, Marker::LINE_STRIP,
-    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.oppositeLane_rgba));
+    createMarkerScale(0.5, 0.5, 0.5), getColorRGBAmsg(odd_elements_->params.oppositeLane_rgb));
   laneBoundaryMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
   laneBoundaryMarker.points.insert(laneBoundaryMarker.points.end(), points.begin(), points.end());
   msg.markers.push_back(laneBoundaryMarker);

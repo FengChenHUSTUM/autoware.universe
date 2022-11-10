@@ -129,7 +129,7 @@ private:
     MarkerArray createDriveableAreaBoundary();
     MarkerArray createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points);
 
-    std_msgs::msg::ColorRGBA getColorRGBAmsg(odd_tools::odd_colorRGBA &odd_color);
+    std_msgs::msg::ColorRGBA getColorRGBAmsg(const std::vector<int64_t> &odd_color);
     odd_tools::ODD_elements getParam();
 };
 } // namespace odd_visualizer

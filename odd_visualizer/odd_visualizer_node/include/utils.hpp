@@ -27,17 +27,11 @@
 
 namespace odd_tools
 {
-    struct odd_colorRGBA {
-        float r = 255.0;
-        float g = 255.0;
-        float b  =255.0;
-        float a = 1.0;
-    };
     struct tuning_params {
         float forward_path_length = 20.0;
         float backward_path_length = 10.0;
-        odd_colorRGBA odd_rgba{};
-        odd_colorRGBA oppositeLane_rgba{};
+        std::vector<int64_t> odd_rgb{};
+        std::vector<int64_t> oppositeLane_rgb{};
     };
     struct ODD_elements {
         tuning_params params{};

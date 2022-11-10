@@ -1,11 +1,11 @@
 odd_visualizer_node:
   ros__parameters:
-    color_rgba_r : 34.0
-    color_rgba_g : 114.0
-    color_rgba_b : 227.0
-    color_rgba_a : 0.9
+    color_configs:
+      # The copyright of color configuration is owned by TUM(in case there exists such thing)
+      # All the color configurations are downloaded from:
+      # https://gist.github.com/lnksz/51e3566af2df5c7aa678cd4dfc8305f7
+      # If you are using VSCode, installing the extension "Color Highlight"(naumovs.color-highlight)
+      # could help with knowing what color will be showing in advance
+      rgb_tum_blue: [17, 69, 132]
+      rgb_tum_red: [153, 20, 0]
 
-    color_opposite_rgba_r: 23.0
-    color_opposite_rgba_g: 81.0
-    color_opposite_rgba_b: 217.0
-    color_opposite_rgba_a: 0.9
