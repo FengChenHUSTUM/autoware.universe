@@ -134,33 +134,53 @@ namespace odd_tools
         return {};
     }
 
-    std::vector<geometry_msgs::msg::Point>  getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets) {
+    std::vector<geometry_msgs::msg::Point>  getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets,
+                                                                            bool sameDirection) {
         std::vector<geometry_msgs::msg::Point> res;
-        if (lanelets.size() > 1)
-        {res.push_back(createPoint((lanelets.begin()->rightBound().basicLineString().end() - 1)->x(),
-                                  (lanelets.begin()->rightBound().basicLineString().end() - 1)->y(),
-                                  (lanelets.begin()->rightBound().basicLineString().end() - 1)->z()));
-        for (auto & ll : lanelets) {
-            const auto lineString = ll.leftBound().basicLineString();
-            for (auto point = lineString.rbegin(); point != lineString.rend(); point++) {
-                res.push_back(createPoint(point->x(), point->y(), point->z()));
+        if (sameDirection) {
+            if (lanelets.size() > 1)
+            {res.push_back(createPoint((lanelets.begin()->rightBound().basicLineString().end() - 1)->x(),
+                                    (lanelets.begin()->rightBound().basicLineString().end() - 1)->y(),
+                                    (lanelets.begin()->rightBound().basicLineString().end() - 1)->z()));
+            for (auto & ll : lanelets) {
+                const auto lineString = ll.leftBound().basicLineString();
+                for (auto point = lineString.rbegin(); point != lineString.rend(); point++) {
+                    res.push_back(createPoint(point->x(), point->y(), point->z()));
+                }
             }
-        }
-        res.push_back(createPoint((lanelets.rbegin()->rightBound().basicLineString().begin())->x(),
-                                (lanelets.rbegin()->rightBound().basicLineString().begin())->y(),
-                                (lanelets.rbegin()->rightBound().basicLineString().begin())->z()));
+            res.push_back(createPoint((lanelets.rbegin()->rightBound().basicLineString().begin())->x(),
+                                    (lanelets.rbegin()->rightBound().basicLineString().begin())->y(),
+                                    (lanelets.rbegin()->rightBound().basicLineString().begin())->z()));
+            }
+            else {
+                res.push_back(createPoint(lanelets[0].rightBound().basicLineString().begin()->x(),
+                                    lanelets[0].rightBound().basicLineString().begin()->y(),
+                                    lanelets[0].rightBound().basicLineString().begin()->z()));
+                for (auto & point : lanelets[0].leftBound().basicLineString()){
+                    res.push_back(createPoint(point.x(), point.y(), point.z()));
+                }
+                res.push_back(createPoint((lanelets[0].rightBound().basicLineString().end() - 1)->x(),
+                                    (lanelets[0].rightBound().basicLineString().end() - 1)->y(),
+                                    (lanelets[0].rightBound().basicLineString().end() - 1)->z()));
+            }
         }
         else {
-            res.push_back(createPoint(lanelets[0].rightBound().basicLineString().begin()->x(),
-                                  lanelets[0].rightBound().basicLineString().begin()->y(),
-                                  lanelets[0].rightBound().basicLineString().begin()->z()));
-            for (auto & point : lanelets[0].leftBound().basicLineString()){
-                res.push_back(createPoint(point.x(), point.y(), point.z()));
+            std::vector<geometry_msgs::msg::Point> LeftPoints, RightPoints;
+            for (auto ll : lanelets) {
+                const auto leftLine = ll.leftBound().basicLineString();
+                const auto rightLine = ll.rightBound().basicLineString();
+                for (auto point = leftLine.rbegin(); point != leftLine.rend(); ++point) {
+                    LeftPoints.push_back(createPoint(point->x(), point->y(), point->z()));
+                }
+                for (auto point = rightLine.rbegin(); point != rightLine.rend(); ++point) {
+                    RightPoints.push_back(createPoint(point->x(), point->y(), point->z()));
+                }
             }
-            res.push_back(createPoint((lanelets[0].rightBound().basicLineString().end() - 1)->x(),
-                                  (lanelets[0].rightBound().basicLineString().end() - 1)->y(),
-                                  (lanelets[0].rightBound().basicLineString().end() - 1)->z()));
+            res.insert(res.end(), LeftPoints.begin(), LeftPoints.end());
+            res.insert(res.end(), RightPoints.rbegin(), RightPoints.rend());
+            res.push_back(LeftPoints[0]);
         }
+
         return res;
     }
 

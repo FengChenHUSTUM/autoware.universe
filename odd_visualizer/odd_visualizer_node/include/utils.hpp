@@ -30,8 +30,8 @@ namespace odd_tools
     struct tuning_params {
         float forward_path_length = 20.0;
         float backward_path_length = 10.0;
-        std::vector<int64_t> odd_rgb{};
-        std::vector<int64_t> oppositeLane_rgb{};
+        std::vector<int64_t> drivable_rgb{};
+        std::vector<int64_t> non_drivable_rgb{};
     };
     struct ODD_elements {
         tuning_params params{};
@@ -70,7 +70,8 @@ namespace odd_tools
          lanelet::LaneletMapPtr lanelet_map_ptr_);
 
 
-    std::vector<geometry_msgs::msg::Point> getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets);
+    std::vector<geometry_msgs::msg::Point> getLaneMarkerPointsFromLanelets(const lanelet::Lanelets & lanelets,
+                                                                           bool sameDirection = false);
 
     size_t getRightProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
                                     const size_t & pointID);

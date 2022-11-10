@@ -8,4 +8,5 @@ odd_visualizer_node:
       # could help with knowing what color will be showing in advance
       rgb_tum_blue: [17, 69, 132]
       rgb_tum_red: [153, 20, 0]
+      rgb_tum_green: [159, 186, 54]
 

@@ -129,7 +129,8 @@ private:
     void getODDFromMap(const lanelet::ConstLanelets laneletSequence);
     void onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet);
     MarkerArray createDriveableAreaBoundary();
-    MarkerArray createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points);
+    MarkerArray createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points,
+                                           bool sameDirection = false);
 
     std_msgs::msg::ColorRGBA getColorRGBAmsg(const std::vector<int64_t> &odd_color);
     odd_tools::ODD_elements getParam();
