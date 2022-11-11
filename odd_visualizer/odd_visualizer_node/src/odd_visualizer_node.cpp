@@ -109,8 +109,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   msg.markers.push_back(poseMarker);
 
   // current position of the ego
-  const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
-  const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+  const auto egoPoint = bgPoint(pose.position.x, pose.position.y, pose.position.z);
+  const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
   
   double curLength = 0;
   // get the arclength of each lanelet in the sequence
@@ -118,7 +118,7 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   // lengthsLaneltes.reserve(current_lanelets_.size());
   for (size_t i = 0; i < current_lanelets_.size(); ++i) {
     if (current_lanelets_[i] == currentLanelet) curIndex = i;
-    const auto curllCenterLine = lanelet::utils::to2D(current_lanelets_[i].centerline());
+    const auto curllCenterLine = lanelet::utils::to3D(current_lanelets_[i].centerline());
     lengthsLaneltes.push_back(odd_tools::getArcLengthFromPoints(curllCenterLine));
   }
   // #################################################################
@@ -128,8 +128,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
                                                            10,
                                                            curLength);
   // operations on current lanelet                       
-  const auto curLeftBound = lanelet::utils::to2D(current_lanelets_[curIndex].leftBound());
-  const auto curRightBound = lanelet::utils::to2D(current_lanelets_[curIndex].rightBound());
+  const auto curLeftBound = lanelet::utils::to3D(current_lanelets_[curIndex].leftBound());
+  const auto curRightBound = lanelet::utils::to3D(current_lanelets_[curIndex].rightBound());
   
   const auto curResampledLeft = odd_tools::resampleLine(curLeftBound, 0.5);
   const auto curResampledRight = odd_tools::resampleLine(curRightBound, 0.5);
@@ -154,8 +154,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
     // push back the boundary line strings of the lanelets before the furtherest lanelet
     if (curIndex + 1 < dyIndex) {
       for (size_t index = curIndex + 1; index < dyIndex; ++index) {
-        const auto midLeftBound = lanelet::utils::to2D(current_lanelets_[index].leftBound());
-        const auto midRightBound = lanelet::utils::to2D(current_lanelets_[index].rightBound());
+        const auto midLeftBound = lanelet::utils::to3D(current_lanelets_[index].leftBound());
+        const auto midRightBound = lanelet::utils::to3D(current_lanelets_[index].rightBound());
         // leftMarkerPoints.reserve(leftMarkerPoints.size() + midLeftBound.size());
         // rightMarkerPoints.reserve(rightMarkerPoints.size() + midRightBound.size());
         for (auto point : midLeftBound) {
@@ -178,8 +178,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
     forwardPoint = odd_tools::getFurtherestForwardPoint(current_lanelets_[dyIndex],
                                                         10,
                                                         curLength);
-    const auto furLeftBound = lanelet::utils::to2D(current_lanelets_[dyIndex].leftBound());
-    const auto furRightBound = lanelet::utils::to2D(current_lanelets_[dyIndex].rightBound());
+    const auto furLeftBound = lanelet::utils::to3D(current_lanelets_[dyIndex].leftBound());
+    const auto furRightBound = lanelet::utils::to3D(current_lanelets_[dyIndex].rightBound());
     
     const auto furResampledLeft = odd_tools::resampleLine(furLeftBound, 0.5);
     const auto furResampledRight = odd_tools::resampleLine(furRightBound, 0.5);
@@ -246,8 +246,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
     // push back the boundary line strings of the lanelets before the furtherest lanelet
     if (curIndex - 1 > backIndex) {
       for (size_t index = curIndex - 1; index > backIndex; --index) {
-        const auto midLeftBound = lanelet::utils::to2D(current_lanelets_[index].leftBound());
-        const auto midRightBound = lanelet::utils::to2D(current_lanelets_[index].rightBound());
+        const auto midLeftBound = lanelet::utils::to3D(current_lanelets_[index].leftBound());
+        const auto midRightBound = lanelet::utils::to3D(current_lanelets_[index].rightBound());
         for (auto point : midLeftBound) {
           backLeftMarkerPoints.insert(backLeftMarkerPoints.begin(),
                                       odd_tools::createPoint(point.basicPoint().x(), 
@@ -272,8 +272,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
                                                         5,
                                                         backLength);
 
-    const auto backLeftBound = lanelet::utils::to2D(current_lanelets_[backIndex].leftBound());
-    const auto backRightBound = lanelet::utils::to2D(current_lanelets_[backIndex].rightBound());
+    const auto backLeftBound = lanelet::utils::to3D(current_lanelets_[backIndex].leftBound());
+    const auto backRightBound = lanelet::utils::to3D(current_lanelets_[backIndex].rightBound());
     
     const auto furBackResampledLeft = odd_tools::resampleLine(backLeftBound, 0.5);
     const auto furBackResampledRight = odd_tools::resampleLine(backRightBound, 0.5);
@@ -404,9 +404,6 @@ void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet
       }
     }
   }
-  // TODO: extend the opposite lanelet to be dynamic
-  // 1. the range should be twice larger than the fixed range
-  // 2. to make it more practicle, we could only consider about the forward lanelets
   if (!rightOppositeLanletes.empty()) {
     const auto rightOppoLine = odd_tools::getLaneMarkerPointsFromLanelets(rightOppositeLanletes);
     odd_adjacent_lane_publisher_->publish(createAdjacentLaneBoundary(rightOppoLine));

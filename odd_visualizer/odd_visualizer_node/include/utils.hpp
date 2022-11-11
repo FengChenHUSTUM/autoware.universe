@@ -114,7 +114,7 @@ namespace odd_tools
         point.z = z;
         return point;
     }
-    double getArcLengthFromPoints(lanelet::ConstLineString3d::TwoDType inputLine);
+    double getArcLengthFromPoints(lanelet::ConstLineString3d::ThreeDType inputLine);
 
     /**
      * @brief resample a line string with an interval
@@ -123,7 +123,7 @@ namespace odd_tools
      * @param interval 
      * @return std::vector<geometry_msgs::msg::Pose> 
      */
-    std::vector<geometry_msgs::msg::Pose> resampleLine(const lanelet::ConstLineString3d::TwoDType & curCenterLine,
+    std::vector<geometry_msgs::msg::Pose> resampleLine(const lanelet::ConstLineString3d::ThreeDType & curCenterLine,
                                                        const double & interval);
 
     /**

@@ -188,7 +188,7 @@ namespace odd_tools
     size_t getRightProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
                                     const size_t & pointID)
     {
-        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
         const auto rightProjection = lanelet::geometry::internal::signedDistanceImpl(currentLanelet.rightBound2d(), curCenterLine[pointID].basicPoint2d()).second;
         for (size_t i = 0; i < currentLanelet.rightBound2d().size(); ++i) {
             if(boost::geometry::equals(rightProjection.result->segmentPoint1, currentLanelet.rightBound2d()[i].basicPoint2d())) {
@@ -201,7 +201,7 @@ namespace odd_tools
     size_t getLeftProjectedPointId(const lanelet::ConstLanelet & currentLanelet,
                                     const size_t & pointID)
     {
-        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
         const auto leftProjection = lanelet::geometry::internal::signedDistanceImpl(currentLanelet.leftBound2d(), curCenterLine[pointID].basicPoint2d()).second;
         for (size_t i = 0; i < currentLanelet.leftBound2d().size(); ++i) {
             if(boost::geometry::equals(leftProjection.result->segmentPoint1, currentLanelet.leftBound2d()[i].basicPoint2d())) {
@@ -273,7 +273,7 @@ namespace odd_tools
         }
     }
 
-    double getArcLengthFromPoints(lanelet::ConstLineString3d::TwoDType inputLine)
+    double getArcLengthFromPoints(lanelet::ConstLineString3d::ThreeDType inputLine)
     {
         double res = 0;
         for (size_t i = 0; i < inputLine.size(); ++i) {
@@ -285,7 +285,7 @@ namespace odd_tools
         return res;
     }
 
-    std::vector<geometry_msgs::msg::Pose> resampleLine(const lanelet::ConstLineString3d::TwoDType & curCenterLine,
+    std::vector<geometry_msgs::msg::Pose> resampleLine(const lanelet::ConstLineString3d::ThreeDType & curCenterLine,
                                                        const double & interval)
     {
         // convert points in current centerline into poses for resampling
@@ -293,7 +293,7 @@ namespace odd_tools
         for (size_t i = 0; i < curCenterLine.size(); ++i) {
             centerlinePoses[i] = createPose(curCenterLine[i].x(),
                                             curCenterLine[i].y(),
-                                            0);
+                                            curCenterLine[i].z());
         }
         // resample the centerline points
         // caculate the whole arc length of the line to be resampled
@@ -320,8 +320,8 @@ namespace odd_tools
                                       const double & interval)
     {
         // current position of the ego
-        const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
-        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto egoPoint = bgPoint(pose.position.x, pose.position.y, pose.position.z);
+        const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
 
         const auto resampledCenterline = resampleLine(curCenterLine, interval);
 
@@ -329,7 +329,7 @@ namespace odd_tools
         size_t poseInCenterline = 0;
         double minDis = std::numeric_limits<double>::max();
         for (size_t i = 0; i < resampledCenterline.size(); ++i) {
-            bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, 0);
+            bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z);
 
             double tmpDis = boost::geometry::distance(point1, egoPoint);
             if (tmpDis < minDis) {
@@ -359,7 +359,7 @@ namespace odd_tools
                                       const double & interval)
     {
         // convert points in current centerline into poses for resampling
-        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
         const auto resampledCenterline = resampleLine(curCenterLine, interval);
 
         // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
@@ -382,8 +382,8 @@ namespace odd_tools
                                       const double & interval)
     {
         // current position of the ego
-        const auto egoPoint = bgPoint(pose.position.x, pose.position.y, 0);
-        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto egoPoint = bgPoint(pose.position.x, pose.position.y, pose.position.z);
+        const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
 
         const auto resampledCenterline = resampleLine(curCenterLine, interval);
 
@@ -391,7 +391,7 @@ namespace odd_tools
         size_t poseInCenterline = 0;
         double minDis = std::numeric_limits<double>::max();
         for (size_t i = 0; i < resampledCenterline.size(); ++i) {
-            bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, 0);
+            bgPoint point1(resampledCenterline[i].position.x, resampledCenterline[i].position.y, resampledCenterline[i].position.z);
 
             double tmpDis = boost::geometry::distance(point1, egoPoint);
             if (tmpDis < minDis) {
@@ -421,7 +421,7 @@ namespace odd_tools
                                       const double & interval)
     {
         // convert points in current centerline into poses for resampling
-        const auto curCenterLine = lanelet::utils::to2D(currentLanelet.centerline());
+        const auto curCenterLine = lanelet::utils::to3D(currentLanelet.centerline());
         const auto resampledCenterline = resampleLine(curCenterLine, interval);
 
         // caculate accumulate distance from the projected point to the furtherest point within the forward range one by one
