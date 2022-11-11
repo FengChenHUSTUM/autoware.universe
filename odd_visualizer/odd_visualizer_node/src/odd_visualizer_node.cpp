@@ -96,10 +96,13 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   centerLineMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
 
   Marker poseMarker = createDefaultMarker(
-    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "ego_pose", 0l, Marker::SPHERE,
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "ego_pose", 1l, Marker::SPHERE,
     createMarkerScale(1.0, 1.0, 1.0), getColorRGBAmsg(odd_elements_->params.drivable_rgb));
-  // double forwardLength = odd_elements_->params.forward_path_length;
-  // const lanelet::ConstLanelets laneletSequence = current_lanelets_;
+
+  Marker directionMarker = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "ego_pose", 2l, Marker::ARROW,
+    createMarkerScale(0.5, 1.0, 2.0), getColorRGBAmsg(odd_elements_->params.drivable_rgb));
+
   const lanelet::ConstLanelet currentLanelet = *current_lanelet_;
   const geometry_msgs::msg::Pose pose = odd_elements_->self_pose->pose;
   poseMarker.pose = pose;
@@ -204,6 +207,13 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
                               furRightMarkerPoints.end());
     }
   }
+  // TODO: visualize an arrow on the furtherest forward point
+  directionMarker.points.resize(2);
+  directionMarker.points[0] = pose.position;
+  directionMarker.points[1] = createPoint(boost::geometry::get<0>(forwardPoint),
+                                          boost::geometry::get<1>(forwardPoint),
+                                          0);
+  msg.markers.push_back(directionMarker);
   // ############### End of finding the furtherest forward point ###############
   // ###########################################################################
 
