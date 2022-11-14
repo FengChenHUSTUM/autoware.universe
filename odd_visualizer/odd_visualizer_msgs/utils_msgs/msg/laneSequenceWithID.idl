@@ -1,9 +1,0 @@
-#include "std_msgs/msg/Header.idl"
-
-module utils_msgs {
-    module msg {
-        struct laneSequenceWithID {
-            sequence<int64> lane_ids;
-        };
-    };
-};
