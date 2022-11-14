@@ -23,7 +23,7 @@
 #include <route_handler/route_handler.hpp>
 #include <tier4_autoware_utils/ros/self_pose_listener.hpp>
 
-#define bgPoint  boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>
+using bgPoint =  boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>;
 
 namespace odd_tools
 {
@@ -178,9 +178,18 @@ namespace odd_tools
     std::vector<geometry_msgs::msg::Point> getMarkerPoints(const std::vector<geometry_msgs::msg::Pose> & bound,
                                                            const bgPoint & startPoint,
                                                            const bgPoint & endPoint);
-    // lanelet::ArcCoordinates getArcCoordinates(
-    //     const lanelet::ConstLanelets & laneletSequence,
-    //     const geometry_msgs::msg::Pose & pose);
+
+    std::vector<geometry_msgs::msg::Point> getCenterPoint(const std::vector<geometry_msgs::msg::Point> & leftBound,
+                                                          const std::vector<geometry_msgs::msg::Point> & rightBound);
+
+    /**
+     * @brief Get the Arrows In One Lanelet object. Each arrow is composed of a start and an end point. 
+     * The start and end points appear alternatively in the returned vector
+     * 
+     * @param centerLine 
+     * @return std::vector<geometry_msgs::msg::Point> 
+     */
+    std::vector<geometry_msgs::msg::Point> getArrowsInOneLanelet(const std::vector<geometry_msgs::msg::Pose> & centerLine);
 } // namespace odd_tools
 
 #endif

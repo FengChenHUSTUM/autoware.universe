@@ -207,13 +207,7 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
                               furRightMarkerPoints.end());
     }
   }
-  // TODO: visualize an arrow on the furtherest forward point
-  directionMarker.points.resize(2);
-  directionMarker.points[0] = pose.position;
-  directionMarker.points[1] = createPoint(boost::geometry::get<0>(forwardPoint),
-                                          boost::geometry::get<1>(forwardPoint),
-                                          0);
-  msg.markers.push_back(directionMarker);
+
   // ############### End of finding the furtherest forward point ###############
   // ###########################################################################
 
@@ -285,8 +279,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
                            (furBackResampledRight.end() - 1)->position.y,
                            0);
 
-    std::vector<geometry_msgs::msg::Point> furBackLeftMarkerPoints;
-    std::vector<geometry_msgs::msg::Point> furBackRightMarkerPoints;
+    pointsVec furBackLeftMarkerPoints;
+    pointsVec furBackRightMarkerPoints;
     if (boost::geometry::distance(backwardPoint, leftEndPoint) > 0.1 &&
         boost::geometry::distance(backwardPoint, rightEndPoint) > 0.1) {
 
@@ -325,6 +319,8 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
     centerLineMarker.points.insert(centerLineMarker.points.end(), 
                                     backRightMarkerPoints.rbegin(), backRightMarkerPoints.rend());
     centerLineMarker.points.insert(centerLineMarker.points.end(), backLeftMarkerPoints[0]);
+    directionMarker.points = odd_tools::getCenterPoint(leftMarkerPoints, rightMarkerPoints);
+    msg.markers.push_back(directionMarker);
   }
   else {
     std::cout << "Error when create the markers!"
@@ -337,10 +333,13 @@ MarkerArray OddVisualizer::createDriveableAreaBoundary() {
   }
                                   
   msg.markers.push_back(centerLineMarker);
+
+
   return msg;
 }
 
-MarkerArray OddVisualizer::createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points,
+MarkerArray OddVisualizer::createAdjacentLaneBoundary(const pointsVec & points,
+                                                      const pointsVec & arrows,
                                                       bool sameDirection) {
   MarkerArray msg;
   std_msgs::msg::ColorRGBA adjacentLaneColor = sameDirection ? getColorRGBAmsg(odd_elements_->params.drivable_rgb) 
@@ -348,9 +347,24 @@ MarkerArray OddVisualizer::createAdjacentLaneBoundary(const std::vector<geometry
   Marker laneBoundaryMarker = createDefaultMarker(
     "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "opposite_lanelets", 3l, Marker::LINE_STRIP,
     createMarkerScale(0.5, 0.5, 0.5), adjacentLaneColor);
+
+  long arrowIndex = 4l;
+  Marker directionMarker = createDefaultMarker(
+    "map", rclcpp::Clock{RCL_ROS_TIME}.now(), "opposite_lanelets", arrowIndex, Marker::ARROW,
+    createMarkerScale(0.5, 1.0, 2.0), adjacentLaneColor);
+  for (size_t i = 0; i < arrows.size(); i += 6) {
+    if (i + 1 < arrows.size()) {
+      directionMarker.points.assign(arrows.begin() + i, arrows.begin() + i + 2);
+      msg.markers.push_back(directionMarker);
+      directionMarker.id = arrowIndex++;
+    }
+  }
+  
   laneBoundaryMarker.pose.orientation = tier4_autoware_utils::createMarkerOrientation(0, 0, 0, 1.0);
   laneBoundaryMarker.points.insert(laneBoundaryMarker.points.end(), points.begin(), points.end());
   msg.markers.push_back(laneBoundaryMarker);
+
+  // directionMarker.points = odd_tools::getCenterPoint();
   return msg;
 }
 
@@ -392,11 +406,10 @@ void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet
 
   lanelet::Lanelets leftOppositeLanletes;
   lanelet::Lanelets rightOppositeLanletes;
-
   for (size_t i = curIndex; i < current_lanelets_.size(); ++i) {
     auto rightOpp = odd_tools::getRightOppositeLanelets(current_lanelets_[i], lanelet_map_ptr_);
-    std::reverse(rightOpp.begin(), rightOpp.end());
     if (!rightOpp.empty()){
+      std::reverse(rightOpp.begin(), rightOpp.end());
       for (auto & ll : rightOpp) {
         if (std::find(rightOppositeLanletes.begin(), rightOppositeLanletes.end(), ll) == rightOppositeLanletes.end()) {
           rightOppositeLanletes.push_back(ll);
@@ -405,8 +418,21 @@ void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet
     }
   }
   if (!rightOppositeLanletes.empty()) {
+    
+    // get center line of each lanelt for the visualization of arrows
+    std::vector<posesVec> centerlines(rightOppositeLanletes.size());
+    pointsVec arrows;
+
+    for (size_t i = 0; i < centerlines.size(); ++i) {
+      centerlines[i] = odd_tools::resampleLine(lanelet::utils::to3D(rightOppositeLanletes[i].centerline3d()), 0.5);
+      pointsVec arrowInOneLanelet = odd_tools::getArrowsInOneLanelet(centerlines[i]);
+      if (!arrowInOneLanelet.empty())
+        arrows.insert(arrows.end(), arrowInOneLanelet.begin(), arrowInOneLanelet.end());
+    }
+
     const auto rightOppoLine = odd_tools::getLaneMarkerPointsFromLanelets(rightOppositeLanletes);
-    odd_adjacent_lane_publisher_->publish(createAdjacentLaneBoundary(rightOppoLine));
+    // add arguements into the function below: arrow markers vector
+    odd_adjacent_lane_publisher_->publish(createAdjacentLaneBoundary(rightOppoLine, arrows));
   }
 }
 } // namespace odd_visualizer

@@ -477,4 +477,35 @@ namespace odd_tools
         }
         return res;
     }
+
+    std::vector<geometry_msgs::msg::Point> getCenterPoint(const std::vector<geometry_msgs::msg::Point> & leftBound,
+                                                          const std::vector<geometry_msgs::msg::Point> & rightBound)
+    {
+        std::vector<geometry_msgs::msg::Point> res(2);
+        if (leftBound.size() > 2 && rightBound.size() > 3) {
+            const auto leftPoint = leftBound.begin() + (leftBound.size() / 2);
+            const auto rightPoint = rightBound.begin() + (rightBound.size() / 2);
+            res[0] = createPoint(leftPoint->x / 2 + rightPoint->x / 2,
+                                leftPoint->y / 2 + rightPoint->y / 2,
+                                leftPoint->z / 2 + rightPoint->z / 2);
+            res[1] = createPoint((leftPoint + 2)->x / 2 + (rightPoint + 2)->x / 2,
+                                (leftPoint + 2)->y / 2 + (rightPoint + 2)->y / 2,
+                                (leftPoint + 2)->z / 2 + (rightPoint + 2)->z / 2);
+        }
+        return res;
+    }
+    std::vector<geometry_msgs::msg::Point> getArrowsInOneLanelet(const std::vector<geometry_msgs::msg::Pose> & centerLine)
+    {
+        std::vector<geometry_msgs::msg::Point> arrows;
+        if (centerLine.size() > 1) {
+            arrows.reserve(centerLine.size());
+        }
+        for (size_t i = 0; i < centerLine.size(); i += 3) {
+            if (i + 1 < centerLine.size()) {
+                arrows.push_back(centerLine[i].position);
+                arrows.push_back(centerLine[i + 2].position);
+            }
+        }
+        return arrows;
+    }
 } // namespace odd_tools

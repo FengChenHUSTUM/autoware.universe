@@ -66,8 +66,8 @@ using scenery_msgs::msg::laneSequenceWithID;
 
 
 using autoware_auto_mapping_msgs::msg::HADMapBin;
-
-
+using posesVec = std::vector<geometry_msgs::msg::Pose>;
+using pointsVec = std::vector<geometry_msgs::msg::Point>;
 
 // using autoware_auto_mapping_msgs::msg::HADMapBin; 
 class OddVisualizer : public rclcpp::Node
@@ -129,7 +129,8 @@ private:
     void getODDFromMap(const lanelet::ConstLanelets laneletSequence);
     void onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet);
     MarkerArray createDriveableAreaBoundary();
-    MarkerArray createAdjacentLaneBoundary(const std::vector<geometry_msgs::msg::Point> & points,
+    MarkerArray createAdjacentLaneBoundary(const pointsVec & points,
+                                           const pointsVec & arrows,
                                            bool sameDirection = false);
 
     std_msgs::msg::ColorRGBA getColorRGBAmsg(const std::vector<int64_t> &odd_color);
