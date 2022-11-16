@@ -85,11 +85,10 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     odd_driveable_area_publisher_->publish(createDriveableAreaBoundary());
     onAdjacentLanelet(*current_lanelet_);
     // getODDFromMap(current_lanelets_);
-    std::cout << "#########################################################################################\n";
     scenery_msgs::msg::speedLimitDisplay speedLimitMSG;
     speedLimitMSG.stamp = now();
     int64_t speed_limit_llint = 0;
-    // speed_limit_llint = current_lanelet_->attribute("speed_limit").asInt().get();
+    speed_limit_llint = current_lanelet_->attribute("speed_limit").asInt().get();
     speedLimitMSG.speedLimit = speed_limit_llint;
     odd_speed_limit_publisher_->publish(speedLimitMSG);
   }
@@ -443,8 +442,6 @@ void OddVisualizer::onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet
   }
 }
 } // namespace odd_visualizer
-
-
 
 
 void printUsage() {

@@ -40,7 +40,7 @@ protected:
 
   jsk_rviz_plugins::OverlayObject::Ptr overlay_;
   rviz_common::properties::ColorProperty * property_text_color_;
-  rviz_common::properties::IntProperty * property_right_;
+  rviz_common::properties::IntProperty * property_left_;
   rviz_common::properties::IntProperty * property_top_;
   rviz_common::properties::IntProperty * property_length_;
   rviz_common::properties::FloatProperty * property_handle_angle_scale_;

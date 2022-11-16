@@ -16,23 +16,23 @@ namespace rviz_plugins
 {
 SpeedLimitDisplay::SpeedLimitDisplay()
 : handle_image_(std::string(
-                  ament_index_cpp::get_package_share_directory("tier4_vehicle_rviz_plugin") +
-                  "/images/handle.png")
+                  ament_index_cpp::get_package_share_directory("odd_rviz_plugin") +
+                  "/images/speed_limit_sign.png")
                   .c_str())
 {
   const Screen * screen_info = DefaultScreenOfDisplay(XOpenDisplay(NULL));
 
-  constexpr float hight_4k = 2160.0;
-  const float scale = static_cast<float>(screen_info->height) / hight_4k;
-  const auto right = static_cast<int>(std::round(128 * scale));
+  constexpr float height_4k = 2160.0;
+  const float scale = static_cast<float>(screen_info->height) / height_4k;
+  const auto left = static_cast<int>(std::round(2160 * scale));
   const auto top = static_cast<int>(std::round(128 * scale));
   const auto length = static_cast<int>(std::round(256 * scale));
 
   property_text_color_ = new rviz_common::properties::ColorProperty(
-    "Text Color", QColor(153, 20, 0), "text color", this, SLOT(updateVisualization()), this);
-  property_right_ = new rviz_common::properties::IntProperty(
-    "right", right, "right of the plotter window", this, SLOT(updateVisualization()), this);
-  property_right_->setMin(0);
+    "Text Color", QColor(0, 0, 0), "text color", this, SLOT(updateVisualization()), this);
+  property_left_ = new rviz_common::properties::IntProperty(
+    "left", left, "left of the plotter window", this, SLOT(updateVisualization()), this);
+  property_left_->setMin(0);
   property_top_ = new rviz_common::properties::IntProperty(
     "Top", top, "Top of the plotter window", this, SLOT(updateVisualization()));
   property_top_->setMin(0);
@@ -110,7 +110,7 @@ void SpeedLimitDisplay::update(float wall_dt, float ros_dt)
 
   QPainter painter(&hud);
   painter.setRenderHint(QPainter::Antialiasing, true);
-  QColor text_color(property_text_color_->getColor());
+  QColor text_color(0, 0, 0);
   text_color.setAlpha(255);
   painter.setPen(QPen(text_color, static_cast<int>(2), Qt::SolidLine));
 
@@ -134,17 +134,29 @@ void SpeedLimitDisplay::update(float wall_dt, float ros_dt)
   painter.drawPixmap(
     0, 0, property_length_->getInt(), property_length_->getInt(), rotate_handle_image);
 
+
+  std::ostringstream speedLimitTitle, speedLimitValue;
+  speedLimitTitle << std::fixed << "Speed Limit\n";
+  speedLimitValue << std::fixed << std::setprecision(1) << steering << "km/h";
+
   QFont font = painter.font();
+  int fontSize = static_cast<int>((static_cast<double>(w)) * property_value_scale_->getFloat());
+
+  font.setPixelSize(std::max(static_cast<int>(std::round(fontSize)), 1));
+  font.setBold(true);
+  painter.drawText(
+  0, std::min(property_value_height_offset_->getInt() - static_cast<int>(std::round(fontSize / 2)), h - 1), w,
+  std::max(h - property_value_height_offset_->getInt(), 1), Qt::AlignCenter | Qt::AlignTop,
+  speedLimitTitle.str().c_str());
+
   font.setPixelSize(
-    std::max(static_cast<int>((static_cast<double>(w)) * property_value_scale_->getFloat()), 1));
+    std::max(fontSize, 1));
   font.setBold(true);
   painter.setFont(font);
-  std::ostringstream steering_angle_ss;
-  steering_angle_ss << std::fixed << std::setprecision(1) << steering * 180.0 / M_PI << "deg";
   painter.drawText(
-    0, std::min(property_value_height_offset_->getInt(), h - 1), w,
-    std::max(h - property_value_height_offset_->getInt(), 1), Qt::AlignCenter | Qt::AlignVCenter,
-    steering_angle_ss.str().c_str());
+    0, std::min(property_value_height_offset_->getInt() + static_cast<int>(std::round(fontSize / 2)), h - 1), w,
+    std::max(h - property_value_height_offset_->getInt(), 1), Qt::AlignCenter | Qt::AlignBaseline,
+    speedLimitValue.str().c_str());
 
   painter.end();
 }
@@ -167,7 +179,7 @@ void SpeedLimitDisplay::processMessage(
 void SpeedLimitDisplay::updateVisualization()
 {
   overlay_->updateTextureSize(property_length_->getInt(), property_length_->getInt());
-  overlay_->setPosition(property_right_->getInt(), property_top_->getInt());
+  overlay_->setPosition(property_left_->getInt(), property_top_->getInt());
   overlay_->setDimensions(overlay_->getTextureWidth(), overlay_->getTextureHeight());
 }
 
