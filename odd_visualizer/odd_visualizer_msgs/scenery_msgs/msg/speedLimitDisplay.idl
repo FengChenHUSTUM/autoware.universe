@@ -2,9 +2,9 @@
 
 module scenery_msgs {
   module msg {
-    struct SpeedLimit {
+    struct speedLimitDisplay {
       builtin_interfaces::msg::Time stamp;
-      float steering_tire_angle;
+      float speedLimit;
     };
   };
 };

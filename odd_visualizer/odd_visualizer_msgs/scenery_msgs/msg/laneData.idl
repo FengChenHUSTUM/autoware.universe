@@ -1,9 +1,0 @@
-#include "scenery_msgs/msg/lanePrimitive.idl"
-
-module scenery_msgs {
-    module msg {
-        struct LaneData {
-            sequence<scenery_msgs::msg::LanePrimitive> dataBase;
-        };
-    };
-};
