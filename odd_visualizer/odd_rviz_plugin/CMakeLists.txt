@@ -12,20 +12,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DQT_NO_KEYWORDS)
 
 set(HEADERS
-  src/tools/turn_signal.hpp
-  src/tools/console_meter.hpp
-  src/tools/steering_angle.hpp
-  src/tools/jsk_overlay_utils.hpp
-  src/tools/velocity_history.hpp
+  # src/steering_angle.hpp
+  src/jsk_overlay_utils.hpp
 )
 
 ## Declare a C++ library
 ament_auto_add_library(odd_rviz_plugin SHARED
-  src/tools/turn_signal.cpp
-  src/tools/console_meter.cpp
-  src/tools/steering_angle.cpp
-  src/tools/jsk_overlay_utils.cpp
-  src/tools/velocity_history.cpp
+
+  # src/steering_angle.cpp
+  src/jsk_overlay_utils.cpp
   ${HEADERS}
 )
 
