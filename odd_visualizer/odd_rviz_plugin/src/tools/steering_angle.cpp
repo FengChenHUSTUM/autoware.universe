@@ -1,4 +1,18 @@
-#include "odd_speed_limit.hpp"
+// Copyright 2020 Tier IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "steering_angle.hpp"
 
 #include <QPainter>
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -13,9 +27,9 @@
 
 namespace rviz_plugins
 {
-ODDSpeedLimitDisplay::ODDSpeedLimitDisplay()
+SteeringAngleDisplay::SteeringAngleDisplay()
 : handle_image_(std::string(
-                  ament_index_cpp::get_package_share_directory("odd_rviz_plugin") +
+                  ament_index_cpp::get_package_share_directory("tier4_vehicle_rviz_plugin") +
                   "/images/handle.png")
                   .c_str())
 {
@@ -23,15 +37,15 @@ ODDSpeedLimitDisplay::ODDSpeedLimitDisplay()
 
   constexpr float hight_4k = 2160.0;
   const float scale = static_cast<float>(screen_info->height) / hight_4k;
-  const auto right = static_cast<int>(std::round(128 * scale));
+  const auto left = static_cast<int>(std::round(128 * scale));
   const auto top = static_cast<int>(std::round(128 * scale));
   const auto length = static_cast<int>(std::round(256 * scale));
 
   property_text_color_ = new rviz_common::properties::ColorProperty(
     "Text Color", QColor(25, 255, 240), "text color", this, SLOT(updateVisualization()), this);
-  property_right_ = new rviz_common::properties::IntProperty(
-    "right", right, "right of the plotter window", this, SLOT(updateVisualization()), this);
-  property_right_->setMin(0);
+  property_left_ = new rviz_common::properties::IntProperty(
+    "Left", left, "Left of the plotter window", this, SLOT(updateVisualization()), this);
+  property_left_->setMin(0);
   property_top_ = new rviz_common::properties::IntProperty(
     "Top", top, "Top of the plotter window", this, SLOT(updateVisualization()));
   property_top_->setMin(0);
@@ -51,19 +65,19 @@ ODDSpeedLimitDisplay::ODDSpeedLimitDisplay()
   property_handle_angle_scale_->setMin(0.1);
 }
 
-ODDSpeedLimitDisplay::~ODDSpeedLimitDisplay()
+SteeringAngleDisplay::~SteeringAngleDisplay()
 {
   if (initialized()) {
     overlay_->hide();
   }
 }
 
-void ODDSpeedLimitDisplay::onInitialize()
+void SteeringAngleDisplay::onInitialize()
 {
   RTDClass::onInitialize();
   static int count = 0;
   rviz_common::UniformStringStream ss;
-  ss << "ODDSpeedLimitDisplayObject" << count++;
+  ss << "SteeringAngleDisplayObject" << count++;
   overlay_.reset(new jsk_rviz_plugins::OverlayObject(ss.str()));
 
   overlay_->show();
@@ -71,20 +85,20 @@ void ODDSpeedLimitDisplay::onInitialize()
   updateVisualization();
 }
 
-void ODDSpeedLimitDisplay::onEnable()
+void SteeringAngleDisplay::onEnable()
 {
   subscribe();
   overlay_->show();
 }
 
-void ODDSpeedLimitDisplay::onDisable()
+void SteeringAngleDisplay::onDisable()
 {
   unsubscribe();
   reset();
   overlay_->hide();
 }
 
-void ODDSpeedLimitDisplay::update(float wall_dt, float ros_dt)
+void SteeringAngleDisplay::update(float wall_dt, float ros_dt)
 {
   (void)wall_dt;
   (void)ros_dt;
@@ -93,7 +107,7 @@ void ODDSpeedLimitDisplay::update(float wall_dt, float ros_dt)
   {
     std::lock_guard<std::mutex> message_lock(mutex_);
     if (last_msg_ptr_) {
-      steering = last_msg_ptr_->speedLimit;
+      steering = last_msg_ptr_->steering_tire_angle;
     }
   }
 
@@ -148,8 +162,8 @@ void ODDSpeedLimitDisplay::update(float wall_dt, float ros_dt)
   painter.end();
 }
 
-void ODDSpeedLimitDisplay::processMessage(
-  const scenery_msgs::msg::speedLimitDisplay::ConstSharedPtr msg_ptr)
+void SteeringAngleDisplay::processMessage(
+  const autoware_auto_vehicle_msgs::msg::SteeringReport::ConstSharedPtr msg_ptr)
 {
   if (!isEnabled()) {
     return;
@@ -163,14 +177,14 @@ void ODDSpeedLimitDisplay::processMessage(
   queueRender();
 }
 
-void ODDSpeedLimitDisplay::updateVisualization()
+void SteeringAngleDisplay::updateVisualization()
 {
   overlay_->updateTextureSize(property_length_->getInt(), property_length_->getInt());
-  overlay_->setPosition(property_right_->getInt(), property_top_->getInt());
+  overlay_->setPosition(property_left_->getInt(), property_top_->getInt());
   overlay_->setDimensions(overlay_->getTextureWidth(), overlay_->getTextureHeight());
 }
 
 }  // namespace rviz_plugins
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(rviz_plugins::ODDSpeedLimitDisplay, rviz_common::Display)
+PLUGINLIB_EXPORT_CLASS(rviz_plugins::SteeringAngleDisplay, rviz_common::Display)
