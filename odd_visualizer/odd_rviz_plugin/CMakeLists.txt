@@ -12,14 +12,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DQT_NO_KEYWORDS)
 
 set(HEADERS
-  # src/steering_angle.hpp
   src/jsk_overlay_utils.hpp
 )
 
 ## Declare a C++ library
 ament_auto_add_library(odd_rviz_plugin SHARED
 
-  # src/steering_angle.cpp
   src/jsk_overlay_utils.cpp
   ${HEADERS}
 )
@@ -33,7 +31,6 @@ pluginlib_export_plugin_description_file(rviz_common plugins/plugin_description.
 
 ament_auto_package(
   INSTALL_TO_SHARE
-  icons
   images
   plugins
 )
