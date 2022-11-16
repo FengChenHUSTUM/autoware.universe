@@ -4,7 +4,7 @@ project(odd_visualizer_node)
 find_package(autoware_cmake REQUIRED)
 autoware_package()
 
-ament_auto_add_executable(odd_visualizer_node
+ament_auto_add_library(odd_visualizer_node
 src/odd_visualizer_node.cpp
 src/utils.cpp
 src/main.cpp)

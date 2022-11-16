@@ -6,22 +6,26 @@ autoware_package()
 
 find_package(Qt5 REQUIRED Core Widgets)
 set(QT_LIBRARIES Qt5::Widgets)
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DQT_NO_KEYWORDS)
 
 set(HEADERS
-  src/odd_details.hpp
-  src/odd_speed_limit.hpp
+
+  # src/jsk_overlay_utils.hpp
+
 )
 
-ament_auto_add_library(${PROJECT_NAME} SHARED
-  src/odd_details.cpp
-  src/odd_speed_limit.cpp
+## Declare a C++ library
+ament_auto_add_library(odd_rviz_plugin SHARED
+
+  # src/jsk_overlay_utils.cpp
+
   ${HEADERS}
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(odd_rviz_plugin
   ${QT_LIBRARIES}
 )
 
@@ -30,7 +34,6 @@ pluginlib_export_plugin_description_file(rviz_common plugins/plugin_description.
 
 ament_auto_package(
   INSTALL_TO_SHARE
-  # icons
   images
   plugins
-) 
+)
