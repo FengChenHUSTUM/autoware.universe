@@ -117,22 +117,8 @@ void SpeedLimitDisplay::update(float wall_dt, float ros_dt)
   const int w = overlay_->getTextureWidth();
   const int h = overlay_->getTextureHeight();
 
-  QMatrix rotation_matrix;
-  rotation_matrix.rotate(
-    std::round(property_handle_angle_scale_->getFloat() * (steering / M_PI) * -180.0));
-
-  // else
-  // rotation_matrix.rotate
-  // ((property_handle_angle_scale_->getFloat() * (msg_ptr->data / M_PI) * -180.0));
-  int handle_image_width = handle_image_.width(), handle_image_height = handle_image_.height();
-  QPixmap rotate_handle_image;
-  rotate_handle_image = handle_image_.transformed(QTransform(rotation_matrix));
-  rotate_handle_image = rotate_handle_image.copy(
-    (rotate_handle_image.width() - handle_image_width) / 2,
-    (rotate_handle_image.height() - handle_image_height) / 2, handle_image_width,
-    handle_image_height);
   painter.drawPixmap(
-    0, 0, property_length_->getInt(), property_length_->getInt(), rotate_handle_image);
+    0, 0, property_length_->getInt(), property_length_->getInt(), handle_image_);
 
 
   std::ostringstream speedLimitTitle, speedLimitValue;

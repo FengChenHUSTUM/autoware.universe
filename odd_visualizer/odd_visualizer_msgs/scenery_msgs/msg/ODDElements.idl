@@ -1,0 +1,11 @@
+#include "std_msgs/msg/Header.idl"
+#include "nonDrivableLane.idl"
+#include "edge.idl"
+module scenery_msgs {
+    module msg {
+        struct ODDElements {
+            nonDrivableLane laneletType;
+            edge lineType;
+        };
+    };
+};

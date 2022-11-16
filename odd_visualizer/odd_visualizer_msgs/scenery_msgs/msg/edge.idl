@@ -1,0 +1,9 @@
+#include "std_msgs/msg/Header.idl"
+
+module scenery_msgs {
+    module msg {
+        struct edge {
+            string edgeType;
+        };
+    };
+};

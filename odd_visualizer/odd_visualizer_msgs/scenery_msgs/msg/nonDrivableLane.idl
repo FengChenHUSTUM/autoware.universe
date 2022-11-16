@@ -1,0 +1,14 @@
+#include "std_msgs/msg/Header.idl"
+
+module scenery_msgs {
+    module msg {
+        struct nonDrivableLane {
+            uint8 EMERGENCYSTREET = 0;
+            uint8 BICYCLELANE = 1;
+            uint8 WALKWAY = 2;
+            uint8 SHAREDWALKWAY = 3;
+            uint8 CROSSWALK = 4;
+            string laneType;
+        };
+    };
+};

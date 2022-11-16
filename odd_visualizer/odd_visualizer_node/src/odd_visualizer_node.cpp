@@ -84,7 +84,7 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     }
     odd_driveable_area_publisher_->publish(createDriveableAreaBoundary());
     onAdjacentLanelet(*current_lanelet_);
-    // getODDFromMap(current_lanelets_);
+    getODDFromMap(current_lanelets_);
     scenery_msgs::msg::speedLimitDisplay speedLimitMSG;
     speedLimitMSG.stamp = now();
     int64_t speed_limit_llint = 0;

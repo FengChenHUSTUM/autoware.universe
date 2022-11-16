@@ -234,11 +234,11 @@ namespace odd_tools
             std::cout << "LaneID: " << lanelet.id() << " is emergency lane" << '\n';
             //TODO: populate the function here
         }
-        // for (auto attr : lanelet.attributes())
-        // {
-        //     std::cout << "LaneID: " << lanelet.id() << "; attribute: "<< attr.first
-        //     << "; "<< attr.second.value() << '\n';
-        // }
+        for (auto attr : lanelet.attributes())
+        {
+            std::cout << "LaneID: " << lanelet.id() << "; attribute: "<< attr.first
+            << "; "<< attr.second.value() << '\n';
+        }
         // TODO: add other params checker
     }
 
