@@ -4,7 +4,7 @@ module scenery_msgs {
   module msg {
     struct speedLimitDisplay {
       builtin_interfaces::msg::Time stamp;
-      float speedLimit;
+      int64 speedLimit;
     };
   };
 };

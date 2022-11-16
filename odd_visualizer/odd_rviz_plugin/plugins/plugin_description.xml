@@ -1,6 +1,6 @@
 <library path="odd_rviz_plugin">
-  <class name="rviz_plugins/SteeringAngle"
-         type="rviz_plugins::SteeringAngleDisplay"
+  <class name="rviz_plugins/SpeedLimit"
+         type="rviz_plugins::SpeedLimitDisplay"
          base_class_type="rviz_common::Display">
   </class>
 </library>

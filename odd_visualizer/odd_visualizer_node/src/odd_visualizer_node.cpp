@@ -13,7 +13,7 @@ OddVisualizer::OddVisualizer(
     std::cout << "odd node loaded! "<<'\n';
     odd_driveable_area_publisher_ = create_publisher<MarkerArray>("/odd_parameter/odd_drivable_area", 1);
     odd_adjacent_lane_publisher_ = create_publisher<MarkerArray>("/odd_parameter/adjacent_lane", 1);
-
+    odd_speed_limit_publisher_ = create_publisher<scenery_msgs::msg::speedLimitDisplay>("/odd_parameter/speed_limit", 1);
 
     map_subscriber_ = this->create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
     "/map/vector_map", 10,
@@ -85,6 +85,13 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     odd_driveable_area_publisher_->publish(createDriveableAreaBoundary());
     onAdjacentLanelet(*current_lanelet_);
     // getODDFromMap(current_lanelets_);
+    std::cout << "#########################################################################################\n";
+    scenery_msgs::msg::speedLimitDisplay speedLimitMSG;
+    speedLimitMSG.stamp = now();
+    int64_t speed_limit_llint = 0;
+    // speed_limit_llint = current_lanelet_->attribute("speed_limit").asInt().get();
+    speedLimitMSG.speedLimit = speed_limit_llint;
+    odd_speed_limit_publisher_->publish(speedLimitMSG);
   }
 }
 
@@ -395,7 +402,7 @@ void OddVisualizer::getODDFromMap(const lanelet::ConstLanelets laneletSequence)
     odd_tools::onNonDrivableLane(lanelet);
     odd_tools::onEdge(lanelet);
     odd_tools::onFixedRoadStructures(lanelet);
-    odd_tools::onRegulations(lanelet);
+    // odd_tools::onRegulations(lanelet);
   }
 }
 

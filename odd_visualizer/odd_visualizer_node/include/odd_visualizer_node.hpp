@@ -15,13 +15,7 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <scenery_msgs/msg/lane_sequence_with_id.hpp>
-
-// #include <scenery_msgs/msg/edge_data.hpp>
-// #include <scenery_msgs/msg/edge_primitive.hpp>
-// #include <scenery_msgs/msg/lane_data.hpp>
-// #include <scenery_msgs/msg/lane_primitive.hpp>
-// #include <scenery_msgs/msg/regulatory_ele_data.hpp>
-// #include <scenery_msgs/msg/regulatory_ele_primitive.hpp>
+#include <scenery_msgs/msg/speed_limit_display.hpp>
 
 #include "utils.hpp"
 
@@ -82,6 +76,7 @@ private:
 
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_driveable_area_publisher_;
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_adjacent_lane_publisher_;
+    rclcpp::Publisher<scenery_msgs::msg::speedLimitDisplay>::SharedPtr odd_speed_limit_publisher_;
 
     tier4_autoware_utils::SelfPoseListener self_pose_listener_{this};
 
