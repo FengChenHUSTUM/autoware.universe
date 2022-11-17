@@ -16,6 +16,7 @@ OddVisualizer::OddVisualizer(
     odd_driveable_area_publisher_ = create_publisher<MarkerArray>("/odd_parameter/odd_drivable_area", 1);
     odd_adjacent_lane_publisher_ = create_publisher<MarkerArray>("/odd_parameter/adjacent_lane", 1);
     odd_speed_limit_publisher_ = create_publisher<scenery_msgs::msg::speedLimitDisplay>("/odd_parameter/speed_limit", 1);
+    odd_elements_publisher_ = create_publisher<scenery_msgs::msg::ODDElements>("/odd_parameter/odd_elements", 1);
 
     // subscribers
     map_subscriber_ = this->create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
@@ -108,26 +109,38 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     odd_speed_limit_publisher_->publish(speedLimitMSG);
 
     // TODO: merge the panel publisher into a separate function
-    // the 
+    // TODO: debug here
     scenery_msgs::msg::ODDElements oddMSG;
     oddMSG.laneletInfo.resize(3);
-    if (curIndex > 1) {
-      size_t llIndex = curIndex - 1;
-      for (size_t i = 0; i < 3; ++i) {
-        if (llIndex < current_lanelets_.size()) {
-          oddMSG.laneletInfo[i].laneletID = current_lanelets_[llIndex].id();
-          for (auto attr : current_lanelets_[llIndex].attributes())
-          {
-              scenery_msgs::msg::attributePrim laneletAttr;
-              laneletAttr.attributeName = attr.first;
-              laneletAttr.strValue = attr.second.value();
-              oddMSG.laneletInfo[i].attributes.push_back(laneletAttr);
-          }
-          llIndex++;
-        }
-      }
-      odd_elements_publisher_->publish(oddMSG);
-    }
+for (int i = 0; i < 3; i++)
+{    oddMSG.laneletInfo[i].laneletID = current_lanelets_[curIndex].id();
+    // std::cout << "size of ll seq: " << current_lanelets_.size() << "; cur index: "<<curIndex<<'\n';
+    for (auto attr : current_lanelets_[curIndex].attributes())
+    {
+        scenery_msgs::msg::attributePrim laneletAttr;
+        laneletAttr.attributeName = attr.first;
+        laneletAttr.strValue = attr.second.value();
+        oddMSG.laneletInfo[i].attributes.push_back(laneletAttr);
+    }}
+    odd_elements_publisher_->publish(oddMSG);
+    // if (curIndex > 1) {
+    //   size_t llIndex = curIndex - 1;
+    //   for (size_t i = 0; i < 3; ++i) {
+    //     if (llIndex < current_lanelets_.size()) {
+    //       oddMSG.laneletInfo[i].laneletID = current_lanelets_[llIndex].id();
+    //       // for (auto attr : current_lanelets_[llIndex].attributes())
+    //       // {
+    //       //     scenery_msgs::msg::attributePrim laneletAttr;
+    //       //     laneletAttr.attributeName = attr.first;
+    //       //     laneletAttr.strValue = attr.second.value();
+    //       //     oddMSG.laneletInfo[i].attributes.push_back(laneletAttr);
+    //       // }
+    //       std::cout <<"lane index: " << llIndex <<'\n';
+    //       llIndex++;
+    //     }
+    //   }
+    //   odd_elements_publisher_->publish(oddMSG);
+    // }
 
   }
 }

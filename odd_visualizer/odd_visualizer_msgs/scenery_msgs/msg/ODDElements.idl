@@ -5,8 +5,6 @@
 module scenery_msgs {
     module msg {
         struct ODDElements {
-            scenery_msgs::msg::nonDrivableLane laneletType;
-            scenery_msgs::msg::edge lineType;
             sequence<scenery_msgs::msg::laneletODD> laneletInfo;
         };
     };
