@@ -9,7 +9,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rviz_common/panel.hpp>
 
-#include <autoware_auto_system_msgs/msg/autoware_state.hpp>
 #include <scenery_msgs/msg/odd_elements.hpp>
 #include <scenery_msgs/srv/teleoperation.hpp>
 

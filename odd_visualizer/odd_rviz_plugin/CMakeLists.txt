@@ -14,6 +14,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 set(HEADERS
   src/jsk_overlay_utils.hpp
   src/speed_limit.hpp
+  src/odd_panel.hpp
 )
 
 ## Declare a C++ library
@@ -21,6 +22,7 @@ ament_auto_add_library(odd_rviz_plugin SHARED
 
   src/jsk_overlay_utils.cpp
   src/speed_limit.cpp
+  src/odd_panel.cpp
   ${HEADERS}
 )
 

@@ -55,6 +55,7 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   auto * v_layout = new QVBoxLayout;
   v_layout->addLayout(up_layout);
   v_layout->addLayout(down_layout);
+  v_layout->addWidget(teleoperation_button_ptr_);
   setLayout(v_layout);
 }
 
@@ -92,19 +93,21 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
                                      history_lanelet_attributes_table_prt_,
                                      next_lanelet_attributes_table_prt_};
   size_t index = 0;
-  for (auto & table : tableList) {
-    size_t RowSize = msg->laneletInfo[index].attributes.size();
-    table->setRowCount(RowSize);
-    table->setColumnCount(2);
-    size_t row = 0;
-    for (auto & attr : msg->laneletInfo[index].attributes) {
-      if (row < RowSize) {
-        table->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-        table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
-        row++;
+  if (msg->laneletInfo.size() == 3) {
+    for (auto & table : tableList) {
+      size_t RowSize = msg->laneletInfo[index].attributes.size();
+      table->setRowCount(RowSize);
+      table->setColumnCount(2);
+      size_t row = 0;
+      for (auto & attr : msg->laneletInfo[index].attributes) {
+        if (row < RowSize) {
+          table->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
+          table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
+          row++;
+        }
       }
+      index++;
     }
-    index++;
   }
 }
 
@@ -122,9 +125,9 @@ void ODDPanel::onClickODDTeleoperation()
     return;
   }
 
-  client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture result) {
-    RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse);
-  });
+  // client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture result) {
+  //   RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse);
+  // });
 }
 
 

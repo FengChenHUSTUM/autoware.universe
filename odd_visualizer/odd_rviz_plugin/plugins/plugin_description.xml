@@ -3,4 +3,8 @@
          type="rviz_plugins::SpeedLimitDisplay"
          base_class_type="rviz_common::Display">
   </class>
+  <class  name="rviz_plugins/ODDPanel"
+          type="rviz_plugins::ODDPanel"
+          base_class_type="rviz_common::Panel">
+  </class>
 </library>

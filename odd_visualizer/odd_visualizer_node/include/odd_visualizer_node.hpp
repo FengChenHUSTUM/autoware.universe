@@ -16,6 +16,8 @@
 
 #include <scenery_msgs/msg/lane_sequence_with_id.hpp>
 #include <scenery_msgs/msg/speed_limit_display.hpp>
+#include <scenery_msgs/msg/odd_elements.hpp>
+#include <scenery_msgs/srv/teleoperation.hpp>
 
 #include "utils.hpp"
 
@@ -77,6 +79,9 @@ private:
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_driveable_area_publisher_;
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_adjacent_lane_publisher_;
     rclcpp::Publisher<scenery_msgs::msg::speedLimitDisplay>::SharedPtr odd_speed_limit_publisher_;
+    rclcpp::Publisher<scenery_msgs::msg::ODDElements>::SharedPtr odd_elements_publisher_;
+
+    rclcpp::Service<scenery_msgs::srv::Teleoperation>::SharedPtr odd_teleoperation_service_;
 
     tier4_autoware_utils::SelfPoseListener self_pose_listener_{this};
 
@@ -95,8 +100,13 @@ private:
     lanelet::ConstLanelets all_lanelets_;
     lanelet::ConstLanelets current_lanelets_;
     std::shared_ptr<lanelet::ConstLanelet> current_lanelet_;
-  // the postion of current lanelet in the lanelet sequence
+    // the postion of current lanelet in the lanelet sequence
     size_t curIndex{0};
+
+
+    // teleoperation service 
+    uint8_t teleoperation_status{0};
+
 
     /**
      * @brief convert lanelet2 into Polygons in the format of geometry message.
@@ -120,7 +130,10 @@ private:
     void laneletSequenceCallback(const laneSequenceWithID::ConstSharedPtr msg);
 
     void creareDrivableBoundaryMarkerArray(const lanelet::ConstLanelets laneletSequence);
-    // void getCurrentLane();
+
+    void onTeleoperationService(
+        const scenery_msgs::srv::Teleoperation::Request::SharedPtr request,
+        const scenery_msgs::srv::Teleoperation::Response::SharedPtr response);
 
     void getODDFromMap(const lanelet::ConstLanelets laneletSequence);
     void onAdjacentLanelet(const lanelet::ConstLanelet currentLanelet);

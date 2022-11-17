@@ -11,10 +11,13 @@ OddVisualizer::OddVisualizer(
     current_lanelet_ = std::make_shared<lanelet::ConstLanelet>();
     //TODO: edit topic path in configuration file
     std::cout << "odd node loaded! "<<'\n';
+
+    // publishers
     odd_driveable_area_publisher_ = create_publisher<MarkerArray>("/odd_parameter/odd_drivable_area", 1);
     odd_adjacent_lane_publisher_ = create_publisher<MarkerArray>("/odd_parameter/adjacent_lane", 1);
     odd_speed_limit_publisher_ = create_publisher<scenery_msgs::msg::speedLimitDisplay>("/odd_parameter/speed_limit", 1);
 
+    // subscribers
     map_subscriber_ = this->create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
     "/map/vector_map", 10,
     std::bind(&OddVisualizer::mapCallback, this, std::placeholders::_1));
@@ -23,9 +26,19 @@ OddVisualizer::OddVisualizer(
         "/planning/scenario_planning/lane_driving/behavior_planning/odd_visualizer/lanelet_sequence_IDs", 1,
     std::bind(&OddVisualizer::laneletSequenceCallback, this, std::placeholders::_1));
 
+    // services
+      odd_teleoperation_service_ = create_service<scenery_msgs::srv::Teleoperation>(
+    "/odd_parameter/teleoperation", std::bind(&OddVisualizer::onTeleoperationService, this, 
+                                              std::placeholders::_1, std::placeholders::_2));
+
 }
-void OddVisualizer::run() {
-    
+void OddVisualizer::onTeleoperationService(
+        const scenery_msgs::srv::Teleoperation::Request::SharedPtr request,
+        const scenery_msgs::srv::Teleoperation::Response::SharedPtr response)
+{
+  teleoperation_status = request->teleoperation;
+  std::string str("response success");
+  response->strResponse = str;
 }
 
 std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(const std::vector<int64_t> &odd_color) {
@@ -84,13 +97,38 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     }
     odd_driveable_area_publisher_->publish(createDriveableAreaBoundary());
     onAdjacentLanelet(*current_lanelet_);
-    getODDFromMap(current_lanelets_);
+    // getODDFromMap(current_lanelets_);
+
+    // TODO: merge speed limit display into a seperate function
     scenery_msgs::msg::speedLimitDisplay speedLimitMSG;
     speedLimitMSG.stamp = now();
     int64_t speed_limit_llint = 0;
     speed_limit_llint = current_lanelet_->attribute("speed_limit").asInt().get();
     speedLimitMSG.speedLimit = speed_limit_llint;
     odd_speed_limit_publisher_->publish(speedLimitMSG);
+
+    // TODO: merge the panel publisher into a separate function
+    // the 
+    scenery_msgs::msg::ODDElements oddMSG;
+    oddMSG.laneletInfo.resize(3);
+    if (curIndex > 1) {
+      size_t llIndex = curIndex - 1;
+      for (size_t i = 0; i < 3; ++i) {
+        if (llIndex < current_lanelets_.size()) {
+          oddMSG.laneletInfo[i].laneletID = current_lanelets_[llIndex].id();
+          for (auto attr : current_lanelets_[llIndex].attributes())
+          {
+              scenery_msgs::msg::attributePrim laneletAttr;
+              laneletAttr.attributeName = attr.first;
+              laneletAttr.strValue = attr.second.value();
+              oddMSG.laneletInfo[i].attributes.push_back(laneletAttr);
+          }
+          llIndex++;
+        }
+      }
+      odd_elements_publisher_->publish(oddMSG);
+    }
+
   }
 }
 
