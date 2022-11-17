@@ -1,0 +1,14 @@
+#include "std_msgs/msg/Empty.idl"
+
+module scenery_msgs {
+  module srv {
+    struct Teleoperation_Request
+    {
+      uint8 teleoperation;
+    };
+    struct Teleoperation_Response
+    {
+      string strResponse;
+    };
+  };
+};

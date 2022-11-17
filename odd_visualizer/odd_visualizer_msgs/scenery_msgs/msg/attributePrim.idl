@@ -1,0 +1,10 @@
+#include "builtin_interfaces/msg/Time.idl"
+
+module scenery_msgs {
+  module msg {
+    struct attributePrim {
+        string attributeName;
+        string strValue;
+    };
+  };
+};

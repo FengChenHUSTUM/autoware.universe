@@ -12,6 +12,12 @@ ament_auto_find_build_dependencies()
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/laneSequenceWithID.idl"
   "msg/speedLimitDisplay.idl"
+  "msg/edge.idl"
+  "msg/nonDrivableLane.idl"
+  "msg/ODDElements.idl"
+  "msg/laneletODD.idl"
+  "msg/attributePrim.idl"
+  "srv/Teleoperation.idl"
   DEPENDENCIES
     "std_msgs"
     "builtin_interfaces"

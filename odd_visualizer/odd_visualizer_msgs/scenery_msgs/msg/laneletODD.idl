@@ -1,0 +1,11 @@
+#include "builtin_interfaces/msg/Time.idl"
+#include "scenery_msgs/msg/attributePrim.idl"
+
+module scenery_msgs {
+  module msg {
+    struct laneletODD {
+        int64 laneletID;
+        sequence<scenery_msgs::msg::attributePrim> attributes;
+    };
+  };
+};

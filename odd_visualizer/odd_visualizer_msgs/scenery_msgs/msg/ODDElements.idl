@@ -1,11 +1,13 @@
 #include "std_msgs/msg/Header.idl"
-#include "nonDrivableLane.idl"
-#include "edge.idl"
+#include "scenery_msgs/msg/nonDrivableLane.idl"
+#include "scenery_msgs/msg/edge.idl"
+#include "scenery_msgs/msg/laneletODD.idl"
 module scenery_msgs {
     module msg {
         struct ODDElements {
-            nonDrivableLane laneletType;
-            edge lineType;
+            scenery_msgs::msg::nonDrivableLane laneletType;
+            scenery_msgs::msg::edge lineType;
+            sequence<scenery_msgs::msg::laneletODD> laneletInfo;
         };
     };
 };
