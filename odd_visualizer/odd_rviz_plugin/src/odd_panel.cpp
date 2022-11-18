@@ -17,31 +17,50 @@ namespace rviz_plugins
 {
 ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 {
-  // current lanelet
+
   auto * up_layout = new QVBoxLayout;
 
   current_lanelet_attributes_table_prt_ = new QTableWidget(this);
   current_lanelet_label_ptr_ = new QLabel("Current Lanelet");
+  current_lanelet_ID_label_ptr_ = new QLabel("NULL");
   current_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
+  current_lanelet_attributes_table_prt_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  current_lanelet_attributes_table_prt_->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  current_lanelet_attributes_table_prt_->verticalHeader()->setVisible(false);
   up_layout->addWidget(current_lanelet_label_ptr_);
+  up_layout->addWidget(current_lanelet_ID_label_ptr_);
   up_layout->addWidget(current_lanelet_attributes_table_prt_);
 
   auto * down_layout = new QHBoxLayout;
 
   // history lanelet
   history_lanelet_attributes_table_prt_ = new QTableWidget(this);
+  history_lanelet_attributes_table_prt_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  history_lanelet_attributes_table_prt_->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  history_lanelet_attributes_table_prt_->verticalHeader()->setVisible(false);
+
+
   history_lanelet_label_ptr_ = new QLabel("History Lanelet");
+  history_lanelet_ID_label_ptr_ = new QLabel("NULL");
   history_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
   auto * history_lanelet_layout = new QVBoxLayout;
   history_lanelet_layout->addWidget(history_lanelet_label_ptr_);
+  history_lanelet_layout->addWidget(history_lanelet_ID_label_ptr_);
   history_lanelet_layout->addWidget(history_lanelet_attributes_table_prt_);
 
   // next lanelet
   next_lanelet_attributes_table_prt_ = new QTableWidget(this);
-  auto * next_lanelet_label_ptr_ = new QLabel("Next Lanelet");
+  next_lanelet_attributes_table_prt_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  next_lanelet_attributes_table_prt_->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  next_lanelet_attributes_table_prt_->verticalHeader()->setVisible(false);
+
+
+  next_lanelet_label_ptr_ = new QLabel("Next Lanelet");
+  next_lanelet_ID_label_ptr_ = new QLabel("NULL");
   next_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
   auto * next_lanelet_layout = new QVBoxLayout;
   next_lanelet_layout->addWidget(next_lanelet_label_ptr_);
+  next_lanelet_layout->addWidget(next_lanelet_ID_label_ptr_);
   next_lanelet_layout->addWidget(next_lanelet_attributes_table_prt_);
 
   down_layout->addLayout(history_lanelet_layout);
@@ -70,81 +89,35 @@ void ODDPanel::onInitialize()
 
   client_teleoperation_ = raw_node_->create_client<scenery_msgs::srv::Teleoperation>(
     "/odd_parameter/teleoperation", rmw_qos_profile_services_default);
-
-  // client_engage_ = raw_node_->create_client<tier4_external_api_msgs::srv::Engage>(
-  //   "/api/external/set/engage", rmw_qos_profile_services_default);
-
-  // client_emergency_stop_ = raw_node_->create_client<tier4_external_api_msgs::srv::SetEmergency>(
-  //   "/api/autoware/set/emergency", rmw_qos_profile_services_default);
-
-  // pub_velocity_limit_ = raw_node_->create_publisher<tier4_planning_msgs::msg::VelocityLimit>(
-  //   "/planning/scenario_planning/max_velocity_default", rclcpp::QoS{1}.transient_local());
-
-  // pub_gate_mode_ = raw_node_->create_publisher<tier4_control_msgs::msg::GateMode>(
-  //   "/control/gate_mode_cmd", rclcpp::QoS{1}.transient_local());
-
-  // pub_path_change_approval_ = raw_node_->create_publisher<tier4_planning_msgs::msg::Approval>(
-  //   "/planning/scenario_planning/lane_driving/behavior_planning/behavior_path_planner/"
-  //   "path_change_approval",
-  //   rclcpp::QoS{1}.transient_local());
 }
 
 
 void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg) {
-  std::list<QTableWidget*> tableList{history_lanelet_attributes_table_prt_,
-                                     current_lanelet_attributes_table_prt_,
-                                     next_lanelet_attributes_table_prt_};
+  std::list<std::pair<QLabel*, QTableWidget*>> laneletList{
+    {history_lanelet_ID_label_ptr_, history_lanelet_attributes_table_prt_},
+    {current_lanelet_ID_label_ptr_, current_lanelet_attributes_table_prt_},
+    {next_lanelet_ID_label_ptr_, next_lanelet_attributes_table_prt_}};
+
+
   size_t index = 0;
-  // if (msg->laneletInfo.size() == 3) {
-    for (auto table : tableList) {
-      size_t RowSize = msg->laneletInfo[index].attributes.size();
-      table->setRowCount(RowSize);
-      table->setColumnCount(2);
-      size_t row = 0;
-      for (auto & attr : msg->laneletInfo[index].attributes) {
-        if (row < RowSize) {
-          table->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-          table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
-          row++;
-        }
+  for (auto lanelet : laneletList) {
+    lanelet.first->setText("Lanelet ID: " + QString::number(msg->laneletInfo[index].laneletID));
+    size_t RowSize = msg->laneletInfo[index].attributes.size();
+    lanelet.second->setRowCount(RowSize);
+    lanelet.second->setColumnCount(2);
+    QStringList tableHeaders;
+    tableHeaders << "Attribute" << "Value";
+    lanelet.second->setHorizontalHeaderLabels(tableHeaders);
+    size_t row = 0;
+    for (auto & attr : msg->laneletInfo[index].attributes) {
+      if (row < RowSize) {
+        lanelet.second->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
+        lanelet.second->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
+        row++;
       }
-      index++;
     }
-  // }
-  // int sizeLL = static_cast<int>(msg->laneletInfo.size());
-  // // current lanelet
-  // current_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[1].attributes.size());
-  // current_lanelet_attributes_table_prt_->setColumnCount(2);
-  // int row = 0;
-  // for (auto & attr : msg->laneletInfo[1].attributes) {
-  //   if (row < current_lanelet_attributes_table_prt_->rowCount()) {
-  //     current_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-  //     current_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
-  //     row++;
-  //   }
-  // }
-  // // history lanelet
-  // history_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[0].attributes.size());
-  // history_lanelet_attributes_table_prt_->setColumnCount(2);
-  // row = 0;
-  // for (auto & attr : msg->laneletInfo[0].attributes) {
-  //   if (row < history_lanelet_attributes_table_prt_->rowCount()) {
-  //     history_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-  //     history_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
-  //     row++;
-  //   }
-  // }
-  // // next lanelet
-  // next_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[2].attributes.size());
-  // next_lanelet_attributes_table_prt_->setColumnCount(2);
-  // row = 0;
-  // for (auto & attr : msg->laneletInfo[2].attributes) {
-  //   if (row < next_lanelet_attributes_table_prt_->rowCount()) {
-  //     next_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-  //     next_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
-  //     row++;
-  //   }
-  // }
+    index++;
+  }
 }
 
 void ODDPanel::onClickODDTeleoperation()
@@ -166,189 +139,6 @@ void ODDPanel::onClickODDTeleoperation()
   // });
 }
 
-
-
-
-// void ODDPanel::onGateMode(const tier4_control_msgs::msg::GateMode::ConstSharedPtr msg)
-// {
-//   switch (msg->data) {
-//     case tier4_control_msgs::msg::GateMode::AUTO:
-//       gate_mode_label_ptr_->setText("AUTO");
-//       gate_mode_label_ptr_->setStyleSheet("background-color: #00FF00;");
-//       break;
-
-//     case tier4_control_msgs::msg::GateMode::EXTERNAL:
-//       gate_mode_label_ptr_->setText("EXTERNAL");
-//       gate_mode_label_ptr_->setStyleSheet("background-color: #FFFF00;");
-//       break;
-
-//     default:
-//       gate_mode_label_ptr_->setText("UNKNOWN");
-//       gate_mode_label_ptr_->setStyleSheet("background-color: #FF0000;");
-//       break;
-//   }
-// }
-
-
-
-// void ODDPanel::onSelectorMode(
-//   const tier4_control_msgs::msg::ExternalCommandSelectorMode::ConstSharedPtr msg)
-// {
-//   switch (msg->data) {
-//     case tier4_control_msgs::msg::ExternalCommandSelectorMode::REMOTE:
-//       selector_mode_label_ptr_->setText("REMOTE");
-//       selector_mode_label_ptr_->setStyleSheet("background-color: #00FF00;");
-//       break;
-
-//     case tier4_control_msgs::msg::ExternalCommandSelectorMode::LOCAL:
-//       selector_mode_label_ptr_->setText("LOCAL");
-//       selector_mode_label_ptr_->setStyleSheet("background-color: #FFFF00;");
-//       break;
-
-//     case tier4_control_msgs::msg::ExternalCommandSelectorMode::NONE:
-//       selector_mode_label_ptr_->setText("NONE");
-//       selector_mode_label_ptr_->setStyleSheet("background-color: #FF0000;");
-//       break;
-
-//     default:
-//       selector_mode_label_ptr_->setText("UNKNOWN");
-//       selector_mode_label_ptr_->setStyleSheet("background-color: #FF0000;");
-//       break;
-//   }
-// }
-
-// void ODDPanel::onAutowareState(
-//   const autoware_auto_system_msgs::msg::AutowareState::ConstSharedPtr msg)
-// {
-//   if (msg->state == autoware_auto_system_msgs::msg::AutowareState::INITIALIZING) {
-//     autoware_state_label_ptr_->setText("INITIALIZING");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #FFFF00;");
-//   } else if (msg->state == autoware_auto_system_msgs::msg::AutowareState::WAITING_FOR_ROUTE) {
-//     autoware_state_label_ptr_->setText("WAITING_FOR_ROUTE");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #FFFF00;");
-//   } else if (msg->state == autoware_auto_system_msgs::msg::AutowareState::PLANNING) {
-//     autoware_state_label_ptr_->setText("PLANNING");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #FFFF00;");
-//   } else if (msg->state == autoware_auto_system_msgs::msg::AutowareState::WAITING_FOR_ENGAGE) {
-//     autoware_state_label_ptr_->setText("WAITING_FOR_ENGAGE");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #00FFFF;");
-//   } else if (msg->state == autoware_auto_system_msgs::msg::AutowareState::DRIVING) {
-//     autoware_state_label_ptr_->setText("DRIVING");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #00FF00;");
-//   } else if (msg->state == autoware_auto_system_msgs::msg::AutowareState::ARRIVED_GOAL) {
-//     autoware_state_label_ptr_->setText("ARRIVED_GOAL");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #FF00FF;");
-//   } else if (msg->state == autoware_auto_system_msgs::msg::AutowareState::FINALIZING) {
-//     autoware_state_label_ptr_->setText("FINALIZING");
-//     autoware_state_label_ptr_->setStyleSheet("background-color: #FFFF00;");
-//   }
-// }
-
-// void ODDPanel::onShift(
-//   const autoware_auto_vehicle_msgs::msg::GearReport::ConstSharedPtr msg)
-// {
-//   switch (msg->report) {
-//     case autoware_auto_vehicle_msgs::msg::GearReport::PARK:
-//       gear_label_ptr_->setText("PARKING");
-//       break;
-//     case autoware_auto_vehicle_msgs::msg::GearReport::REVERSE:
-//       gear_label_ptr_->setText("REVERSE");
-//       break;
-//     case autoware_auto_vehicle_msgs::msg::GearReport::DRIVE:
-//       gear_label_ptr_->setText("DRIVE");
-//       break;
-//     case autoware_auto_vehicle_msgs::msg::GearReport::LOW:
-//       gear_label_ptr_->setText("LOW");
-//       break;
-//   }
-// }
-
-// void ODDPanel::onEngageStatus(
-//   const tier4_external_api_msgs::msg::EngageStatus::ConstSharedPtr msg)
-// {
-//   current_engage_ = msg->engage;
-//   engage_status_label_ptr_->setText(QString::fromStdString(Bool2String(current_engage_)));
-// }
-
-// void ODDPanel::onEmergencyStatus(
-//   const tier4_external_api_msgs::msg::Emergency::ConstSharedPtr msg)
-// {
-//   current_emergency_ = msg->emergency;
-//   if (msg->emergency) {
-//     emergency_button_ptr_->setText(QString::fromStdString("Clear Emergency"));
-//     emergency_button_ptr_->setStyleSheet("background-color: #FF0000;");
-//   } else {
-//     emergency_button_ptr_->setText(QString::fromStdString("Set Emergency"));
-//     emergency_button_ptr_->setStyleSheet("background-color: #00FF00;");
-//   }
-// }
-
-// void ODDPanel::onClickVelocityLimit()
-// {
-//   auto velocity_limit = std::make_shared<tier4_planning_msgs::msg::VelocityLimit>();
-//   velocity_limit->max_velocity = pub_velocity_limit_input_->value() / 3.6;
-//   pub_velocity_limit_->publish(*velocity_limit);
-// }
-
-// void ODDPanel::onClickAutowareEngage()
-// {
-//   using tier4_external_api_msgs::srv::Engage;
-
-//   auto req = std::make_shared<Engage::Request>();
-//   req->engage = !current_engage_;
-
-//   RCLCPP_INFO(raw_node_->get_logger(), "client request");
-
-//   if (!client_engage_->service_is_ready()) {
-//     RCLCPP_INFO(raw_node_->get_logger(), "client is unavailable");
-//     return;
-//   }
-
-//   client_engage_->async_send_request(req, [this](rclcpp::Client<Engage>::SharedFuture result) {
-//     RCLCPP_INFO(
-//       raw_node_->get_logger(), "Status: %d, %s", result.get()->status.code,
-//       result.get()->status.message.c_str());
-//   });
-// }
-
-// void ODDPanel::onClickEmergencyButton()
-// {
-//   using tier4_external_api_msgs::msg::ResponseStatus;
-//   using tier4_external_api_msgs::srv::SetEmergency;
-
-//   auto request = std::make_shared<SetEmergency::Request>();
-//   request->emergency = !current_emergency_;
-
-//   RCLCPP_INFO(raw_node_->get_logger(), request->emergency ? "Set Emergency" : "Clear Emergency");
-
-//   client_emergency_stop_->async_send_request(
-//     request, [this](rclcpp::Client<SetEmergency>::SharedFuture result) {
-//       const auto & response = result.get();
-//       if (response->status.code == ResponseStatus::SUCCESS) {
-//         RCLCPP_INFO(raw_node_->get_logger(), "service succeeded");
-//       } else {
-//         RCLCPP_WARN(
-//           raw_node_->get_logger(), "service failed: %s", response->status.message.c_str());
-//       }
-//     });
-// }
-// void ODDPanel::onClickGateMode()
-// {
-//   const auto data = gate_mode_label_ptr_->text().toStdString() == "AUTO"
-//                       ? tier4_control_msgs::msg::GateMode::EXTERNAL
-//                       : tier4_control_msgs::msg::GateMode::AUTO;
-//   RCLCPP_INFO(raw_node_->get_logger(), "data : %d", data);
-//   pub_gate_mode_->publish(
-//     tier4_control_msgs::build<tier4_control_msgs::msg::GateMode>().data(data));
-// }
-
-// void ODDPanel::onClickPathChangeApproval()
-// {
-//   pub_path_change_approval_->publish(
-//     tier4_planning_msgs::build<tier4_planning_msgs::msg::Approval>()
-//       .stamp(raw_node_->now())
-//       .approval(true));
-// }
 }  // namespace rviz_plugins
 
 #include <pluginlib/class_list_macros.hpp>

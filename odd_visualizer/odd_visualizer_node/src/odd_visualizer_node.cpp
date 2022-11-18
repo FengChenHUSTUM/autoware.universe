@@ -112,18 +112,6 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     // TODO: debug here
     scenery_msgs::msg::ODDElements oddMSG;
     oddMSG.laneletInfo.resize(3);
-// for (int i = 0; i < 3; i++)
-// {    oddMSG.laneletInfo[i].laneletID = current_lanelets_[curIndex].id();
-//     // std::cout << "size of ll seq: " << current_lanelets_.size() << "; cur index: "<<curIndex<<'\n';
-//     for (auto attr : current_lanelets_[curIndex].attributes())
-//     {
-//         scenery_msgs::msg::attributePrim laneletAttr;
-//         laneletAttr.attributeName = attr.first;
-//         laneletAttr.strValue = attr.second.value();
-//         oddMSG.laneletInfo[i].attributes.push_back(laneletAttr);
-//     }}
-//     odd_elements_publisher_->publish(oddMSG);
-// std::cout << curIndex << '\n';
     if (curIndex > 0) {
       size_t llIndex = curIndex - 1;
       for (size_t i = 0; i < 3; ++i) {
