@@ -70,9 +70,6 @@ protected:
   QTableWidget * history_lanelet_attributes_table_prt_;
   QTableWidget * next_lanelet_attributes_table_prt_;
 
-  QTableWidgetItem * item0;
-  QTableWidgetItem * item1;
-
   QPushButton * teleoperation_button_ptr_;
   bool teleoperation_state_{false};
 

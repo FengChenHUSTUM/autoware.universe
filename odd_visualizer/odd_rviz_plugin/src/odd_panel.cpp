@@ -17,38 +17,37 @@ namespace rviz_plugins
 {
 ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 {
-  item0 = new QTableWidgetItem("Init");
-  item1 = new QTableWidgetItem("Init");
-
-  auto * up_layout = new QHBoxLayout;
-
   // current lanelet
+  auto * up_layout = new QVBoxLayout;
+
   current_lanelet_attributes_table_prt_ = new QTableWidget(this);
   current_lanelet_label_ptr_ = new QLabel("Current Lanelet");
   current_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
-  auto * current_lanelet_layout = new QVBoxLayout;
-  current_lanelet_layout->addWidget(current_lanelet_label_ptr_);
-  current_lanelet_layout->addWidget(current_lanelet_attributes_table_prt_);
+  up_layout->addWidget(current_lanelet_label_ptr_);
+  up_layout->addWidget(current_lanelet_attributes_table_prt_);
+
+  auto * down_layout = new QHBoxLayout;
 
   // history lanelet
   history_lanelet_attributes_table_prt_ = new QTableWidget(this);
-  auto * history_lanelet_label_ptr_ = new QLabel("History Lanelet");
+  history_lanelet_label_ptr_ = new QLabel("History Lanelet");
   history_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
   auto * history_lanelet_layout = new QVBoxLayout;
   history_lanelet_layout->addWidget(history_lanelet_label_ptr_);
   history_lanelet_layout->addWidget(history_lanelet_attributes_table_prt_);
 
-  up_layout->addLayout(current_lanelet_layout);
-  up_layout->addLayout(history_lanelet_layout);
-
   // next lanelet
-  auto * down_layout = new QVBoxLayout;
-
-  auto * next_lanelet_attributes_table_prt_ = new QTableWidget(this);
+  next_lanelet_attributes_table_prt_ = new QTableWidget(this);
   auto * next_lanelet_label_ptr_ = new QLabel("Next Lanelet");
   next_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
-  down_layout->addWidget(next_lanelet_label_ptr_);
-  down_layout->addWidget(next_lanelet_attributes_table_prt_);
+  auto * next_lanelet_layout = new QVBoxLayout;
+  next_lanelet_layout->addWidget(next_lanelet_label_ptr_);
+  next_lanelet_layout->addWidget(next_lanelet_attributes_table_prt_);
+
+  down_layout->addLayout(history_lanelet_layout);
+  down_layout->addLayout(next_lanelet_layout);
+
+
 
   // teleoperation button
   teleoperation_button_ptr_ = new QPushButton("Teleoperation");
@@ -92,43 +91,60 @@ void ODDPanel::onInitialize()
 
 
 void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg) {
-  // std::list<QTableWidget*> tableList{current_lanelet_attributes_table_prt_,
-  //                                    history_lanelet_attributes_table_prt_,
-  //                                    next_lanelet_attributes_table_prt_};
-  // size_t index = 0;
+  std::list<QTableWidget*> tableList{history_lanelet_attributes_table_prt_,
+                                     current_lanelet_attributes_table_prt_,
+                                     next_lanelet_attributes_table_prt_};
+  size_t index = 0;
   // if (msg->laneletInfo.size() == 3) {
-  //   for (auto & table : tableList) {
-  //     size_t RowSize = msg->laneletInfo[index].attributes.size();
-  //     table->setRowCount(RowSize);
-  //     table->setColumnCount(2);
-  //     size_t row = 0;
-  //     for (auto & attr : msg->laneletInfo[index].attributes) {
-  //       if (row < RowSize) {
-  //         table->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-  //         table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
-  //         row++;
-  //       }
-  //     }
-  //     index++;
-  //   }
-  // }
-  // int sizeLL = static_cast<int>(msg->laneletInfo.size());
-  current_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[0].attributes.size());
-  current_lanelet_attributes_table_prt_->setColumnCount(2);
-  int row = 0;
-      for (auto & attr : msg->laneletInfo[0].attributes) {
-        if (row < current_lanelet_attributes_table_prt_->rowCount()) {
-          current_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
-          current_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
+    for (auto table : tableList) {
+      size_t RowSize = msg->laneletInfo[index].attributes.size();
+      table->setRowCount(RowSize);
+      table->setColumnCount(2);
+      size_t row = 0;
+      for (auto & attr : msg->laneletInfo[index].attributes) {
+        if (row < RowSize) {
+          table->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
+          table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
           row++;
         }
       }
-  // current_lanelet_attributes_table_prt_->setItem(0, 0, item0);
-  // current_lanelet_attributes_table_prt_->setItem(0, 1, item1);
-  // item0->setText("some name");
-  // // item0->setText(QString::fromStdString(msg->laneletInfo[0].attributes[0].attributeName));
-  // item1->setText(QString::fromStdString(msg->laneletInfo[0].attributes[0].strValue));
-
+      index++;
+    }
+  // }
+  // int sizeLL = static_cast<int>(msg->laneletInfo.size());
+  // // current lanelet
+  // current_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[1].attributes.size());
+  // current_lanelet_attributes_table_prt_->setColumnCount(2);
+  // int row = 0;
+  // for (auto & attr : msg->laneletInfo[1].attributes) {
+  //   if (row < current_lanelet_attributes_table_prt_->rowCount()) {
+  //     current_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
+  //     current_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
+  //     row++;
+  //   }
+  // }
+  // // history lanelet
+  // history_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[0].attributes.size());
+  // history_lanelet_attributes_table_prt_->setColumnCount(2);
+  // row = 0;
+  // for (auto & attr : msg->laneletInfo[0].attributes) {
+  //   if (row < history_lanelet_attributes_table_prt_->rowCount()) {
+  //     history_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
+  //     history_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
+  //     row++;
+  //   }
+  // }
+  // // next lanelet
+  // next_lanelet_attributes_table_prt_->setRowCount(msg->laneletInfo[2].attributes.size());
+  // next_lanelet_attributes_table_prt_->setColumnCount(2);
+  // row = 0;
+  // for (auto & attr : msg->laneletInfo[2].attributes) {
+  //   if (row < next_lanelet_attributes_table_prt_->rowCount()) {
+  //     next_lanelet_attributes_table_prt_->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
+  //     next_lanelet_attributes_table_prt_->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
+  //     row++;
+  //   }
+  // }
 }
 
 void ODDPanel::onClickODDTeleoperation()
