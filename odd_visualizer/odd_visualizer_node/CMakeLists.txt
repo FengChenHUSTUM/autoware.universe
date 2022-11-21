@@ -6,6 +6,7 @@ autoware_package()
 
 ament_auto_add_executable(odd_visualizer_node
 src/odd_visualizer_node.cpp
+src/tele_state_machine.cpp
 src/utils.cpp
 src/main.cpp)
 

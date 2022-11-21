@@ -12,7 +12,10 @@
 #include <rviz_common/panel.hpp>
 
 #include <scenery_msgs/msg/odd_elements.hpp>
+#include <scenery_msgs/msg/tele_state.hpp>
 #include <scenery_msgs/srv/teleoperation.hpp>
+
+using scenery_msgs::srv::Teleoperation;
 
 
 /* TODO: populate the panel function
@@ -65,7 +68,7 @@ protected:
   QTableWidget * next_lanelet_attributes_table_prt_;
 
   QPushButton * teleoperation_button_ptr_;
-  bool teleoperation_state_{false};
+  bool teleoperation_button_on{false};
 };
 
 }  // namespace rviz_plugins

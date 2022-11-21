@@ -6,6 +6,8 @@ OddVisualizer::OddVisualizer(
 : Node(node_name, node_options), tf_buffer_(get_clock()), tf_listener_(tf_buffer_) {
 
     setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+    tele_state_machine_ = new TeleStateMachine();
+    
     odd_elements_ = std::make_shared<odd_tools::ODD_elements>();
     *odd_elements_ = getParam();
     current_lanelet_ = std::make_shared<lanelet::ConstLanelet>();
@@ -19,13 +21,23 @@ OddVisualizer::OddVisualizer(
     odd_elements_publisher_ = create_publisher<scenery_msgs::msg::ODDElements>("/odd_parameter/odd_elements", 1);
 
     // subscribers
-    map_subscriber_ = this->create_subscription<autoware_auto_mapping_msgs::msg::HADMapBin>(
-    "/map/vector_map", 10,
-    std::bind(&OddVisualizer::mapCallback, this, std::placeholders::_1));
+    map_subscriber_ = this->create_subscription<HADMapBin>(
+      "/map/vector_map", 10, std::bind(&OddVisualizer::mapCallback, this, std::placeholders::_1));
 
     lanelet_sequence_subscriber_ = this->create_subscription<laneSequenceWithID>(
-        "/planning/scenario_planning/lane_driving/behavior_planning/odd_visualizer/lanelet_sequence_IDs", 1,
+      "/planning/scenario_planning/lane_driving/behavior_planning/odd_visualizer/lanelet_sequence_IDs", 1,
     std::bind(&OddVisualizer::laneletSequenceCallback, this, std::placeholders::_1));
+
+    emergency_state_subscriber_ = this->create_subscription<EmergencyState>(
+      "/system/emergency/emergency_state", 1,
+    std::bind(&OddVisualizer::EmergencyStateCallback, this, std::placeholders::_1));
+
+    autoware_state_subscriber_ = this->create_subscription<AutowareState>(
+      "/autoware/state", 1,
+    std::bind(&OddVisualizer::Callback, this, std::placeholders::_1));
+
+    hazard_state_subscriber_ = this->create_subscription<HazardStatus>(
+      "/system/emergency/hazard_status", 1, std::bind(&OddVisualizer::laneletSequenceCallback, this, std::placeholders::_1));
 
     // services
       odd_teleoperation_service_ = create_service<scenery_msgs::srv::Teleoperation>(
@@ -145,6 +157,7 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     }
     odd_elements_publisher_->publish(oddMSG);
   }
+  tele_state_machine_.checkCurrentState();
 }
 
 MarkerArray OddVisualizer::createDriveableAreaBoundary() {
@@ -426,6 +439,23 @@ MarkerArray OddVisualizer::createAdjacentLaneBoundary(const pointsVec & points,
   // directionMarker.points = odd_tools::getCenterPoint();
   return msg;
 }
+
+void OddVisualizer::EmergencyStateCallback(const EmergencyState::ConstSharedPtr msg) {
+  if (msg->state == EmergencyState::OVERRIDE_REQUESTING) {
+    std::unique_lock<std::mutex> stateMachineLock(lock_state_machine_);
+    tele_state_machine_->checkAndSetCurrentState(msg);
+    stateMachineLock.unlock();
+  }
+}
+
+void OddVisualizer::AutowareStateCallback(const AutowareState::ConstSharedPtr msg) {
+  if (msg->state == AutowareState::DRIVING) {
+    std::unique_lock<std::mutex> stateMachineLock(lock_state_machine_);
+    tele_state_machine_->checkAndSetCurrentState(msg);
+    stateMachineLock.unlock();
+  }
+}
+
 
 void OddVisualizer::lanletToPolygonMsg(
         const lanelet::ConstLanelet & ll,

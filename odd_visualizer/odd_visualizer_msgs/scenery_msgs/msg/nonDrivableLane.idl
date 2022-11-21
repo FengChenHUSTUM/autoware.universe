@@ -2,7 +2,7 @@
 
 module scenery_msgs {
     module msg {
-        module LaneType_Constants {
+        module nonDrivableLane_Constants {
             const uint8 EMERGENCYSTREET =0;
             const uint8 BICYCLELANE =1;
             const uint8 WALKWAY =2;

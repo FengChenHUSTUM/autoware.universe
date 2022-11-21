@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 // Ros2
 #include <rclcpp/rclcpp.hpp>
@@ -20,12 +21,21 @@
 #include <scenery_msgs/srv/teleoperation.hpp>
 
 #include "utils.hpp"
+#include "tele_state_machine.hpp"
 
 // Autoware
 #include <autoware_auto_mapping_msgs/msg/had_map_bin.hpp>
 #include <behavior_path_planner/debug_utilities.hpp>
 #include <tier4_autoware_utils/ros/marker_helper.hpp>
 #include <motion_utils/resample/resample.hpp>
+
+#include <autoware_auto_system_msgs/msg/emergency_state.hpp>
+#include <autoware_auto_system_msgs/msg/hazard_status_stamped.hpp>
+#include <autoware_auto_system_msgs/msg/autoware_state.hpp>
+
+#include <autoware_auto_vehicle_msgs/msg/control_mode_report.hpp>
+#include <autoware_auto_vehicle_msgs/msg/gear_command.hpp>
+#include <autoware_auto_vehicle_msgs/msg/hazard_lights_command.hpp>
 
 // #include <tier4_autoware_utils/ros/self_pose_listener.hpp>
 
@@ -63,6 +73,10 @@ using scenery_msgs::msg::laneSequenceWithID;
 
 
 using autoware_auto_mapping_msgs::msg::HADMapBin;
+using autoware_auto_system_msgs::msg::EmergencyState;
+using autoware_auto_system_msgs::msg::AutowareState;
+using autoware_auto_system_msgs::msg::HazardStatus;
+
 using posesVec = std::vector<geometry_msgs::msg::Pose>;
 using pointsVec = std::vector<geometry_msgs::msg::Point>;
 
@@ -75,7 +89,10 @@ private:
     // ROS subscribers and publishers
     rclcpp::Subscription<HADMapBin>::SharedPtr map_subscriber_;
     rclcpp::Subscription<laneSequenceWithID>::SharedPtr lanelet_sequence_subscriber_;
-
+    rclcpp::Subscription<EmergencyState>::SharedPtr emergency_state_subscriber_;
+    rclcpp::Subscription<AutowareState>::SharedPtr autoware_state_subscriber_;
+    rclcpp::Subscription<HazardStatus>::SharedPtr hazard_state_subscriber_;
+    
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_driveable_area_publisher_;
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_adjacent_lane_publisher_;
     rclcpp::Publisher<scenery_msgs::msg::speedLimitDisplay>::SharedPtr odd_speed_limit_publisher_;
@@ -104,7 +121,9 @@ private:
     size_t curIndex{0};
 
 
-    // teleoperation service 
+    // teleoperation service
+    TeleStateMachine *tele_state_machine_;
+    std::mutex lock_state_machine_;
     uint8_t teleoperation_status{0};
 
 
@@ -126,8 +145,11 @@ private:
     void run();
 
     void mapCallback(const autoware_auto_mapping_msgs::msg::HADMapBin::ConstSharedPtr msg);
-
     void laneletSequenceCallback(const laneSequenceWithID::ConstSharedPtr msg);
+    void EmergencyStateCallback(const EmergencyState::ConstSharedPtr msg);
+    void AutowareStateCallback(const AutowareState::ConstSharedPtr msg);
+    void HazardStatusCallback(const HazardStatus::ConstSharedPtr msg);
+
 
     void creareDrivableBoundaryMarkerArray(const lanelet::ConstLanelets laneletSequence);
 

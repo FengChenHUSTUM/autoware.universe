@@ -1,0 +1,16 @@
+#include "std_msgs/msg/Header.idl"
+#include "builtin_interfaces/msg/Time.idl"
+
+module scenery_msgs {
+  module msg {
+    module teleState_Constants {
+        const uint8 WAITINGFORENGAGE = 0;
+        const uint8 DRIVING = 1;
+        const uint8 TAKEOVER_REQUESTING = 2;
+        const uint8 TELEOPERATION = 3;
+    };
+    struct teleState {
+        uint8 currentState;
+    };
+  };
+};

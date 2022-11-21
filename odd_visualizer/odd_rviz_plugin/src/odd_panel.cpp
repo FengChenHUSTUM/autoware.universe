@@ -122,21 +122,25 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
 
 void ODDPanel::onClickODDTeleoperation()
 {
-  using scenery_msgs::srv::Teleoperation;
-
   auto req = std::make_shared<Teleoperation::Request>();
-  req->teleoperation = !teleoperation_state_;
-
-  RCLCPP_INFO(raw_node_->get_logger(), "client request");
-
-  if (!client_teleoperation_->service_is_ready()) {
-    RCLCPP_INFO(raw_node_->get_logger(), "client is unavailable");
-    return;
+  if (teleoperation_button_on) {
+    teleoperation_button_on = false;
+    req->teleoperation = scenery_msgs::msg::teleState::DRIVING;
   }
+  else {
+    req->teleoperation = scenery_msgs::msg::teleState::TELEOPERATION;
 
-  // client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture result) {
-  //   RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse);
-  // });
+    RCLCPP_INFO(raw_node_->get_logger(), "client request");
+    teleoperation_button_on = true;
+
+    if (!client_teleoperation_->service_is_ready()) {
+      RCLCPP_INFO(raw_node_->get_logger(), "client is unavailable");
+      return;
+    }
+  }
+  client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture result) {
+    RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse);
+  });
 }
 
 }  // namespace rviz_plugins

@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ODDElements.idl"
   "msg/laneletODD.idl"
   "msg/attributePrim.idl"
+  "msg/teleState.idl"
   "srv/Teleoperation.idl"
   DEPENDENCIES
     "std_msgs"
