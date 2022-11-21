@@ -33,6 +33,7 @@
   <depend>behavior_path_planner</depend>
   <depend>route_handler</depend>
   <depend>motion_utils</depend>
+  <depend>autoware_auto_system_msgs</depend>
 
   <test_depend>ament_cmake_ros</test_depend>
 

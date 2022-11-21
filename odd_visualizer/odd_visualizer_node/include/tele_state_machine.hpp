@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 
 // Autoware msg
 #include <autoware_auto_system_msgs/msg/emergency_state.hpp>
@@ -28,7 +29,7 @@ enum TeleState : uint8_t{
 class TeleStateMachine
 {
 public:
-    TeleStateMachine();
+    TeleStateMachine(){std::cout << "State Machine Initialized!\n";}
     ~TeleStateMachine() = default;
     inline TeleState getCurrentState() const {return currentState;}
     inline void setCurrentState(const TeleState &inputState) {currentState = inputState;}
@@ -42,7 +43,5 @@ private :
     TeleState currentState{TeleState::WaitingForEngagement};
     
 };
-
-
 
 #endif // TELE_STATE_MACHINE_HPP_

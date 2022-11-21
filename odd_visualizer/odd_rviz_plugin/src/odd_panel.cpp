@@ -139,7 +139,7 @@ void ODDPanel::onClickODDTeleoperation()
     }
   }
   client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture result) {
-    RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse);
+    RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse.c_str());
   });
 }
 

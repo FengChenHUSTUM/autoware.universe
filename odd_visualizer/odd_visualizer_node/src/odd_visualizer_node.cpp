@@ -34,10 +34,10 @@ OddVisualizer::OddVisualizer(
 
     autoware_state_subscriber_ = this->create_subscription<AutowareState>(
       "/autoware/state", 1,
-    std::bind(&OddVisualizer::Callback, this, std::placeholders::_1));
+    std::bind(&OddVisualizer::AutowareStateCallback, this, std::placeholders::_1));
 
     hazard_state_subscriber_ = this->create_subscription<HazardStatus>(
-      "/system/emergency/hazard_status", 1, std::bind(&OddVisualizer::laneletSequenceCallback, this, std::placeholders::_1));
+      "/system/emergency/hazard_status", 1, std::bind(&OddVisualizer::HazardStatusCallback, this, std::placeholders::_1));
 
     // services
       odd_teleoperation_service_ = create_service<scenery_msgs::srv::Teleoperation>(
@@ -157,7 +157,6 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     }
     odd_elements_publisher_->publish(oddMSG);
   }
-  tele_state_machine_.checkCurrentState();
 }
 
 MarkerArray OddVisualizer::createDriveableAreaBoundary() {
@@ -454,6 +453,13 @@ void OddVisualizer::AutowareStateCallback(const AutowareState::ConstSharedPtr ms
     tele_state_machine_->checkAndSetCurrentState(msg);
     stateMachineLock.unlock();
   }
+}
+
+void OddVisualizer::HazardStatusCallback(const HazardStatus::ConstSharedPtr msg) {
+  if (msg->emergency || msg->emergency_holding) {
+    // merge into taking over request condition determination 
+    std::cout << "emergency state!";
+  }  
 }
 
 
