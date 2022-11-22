@@ -4,11 +4,11 @@ module scenery_msgs {
   module srv {
     struct Teleoperation_Request
     {
-      uint8 teleoperation;
+      uint8 teleoperation_status;
     };
     struct Teleoperation_Response
     {
-      string strResponse;
+      uint8 teleoperation_ready;
     };
   };
 };

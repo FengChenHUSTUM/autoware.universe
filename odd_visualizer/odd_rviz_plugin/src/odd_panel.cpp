@@ -123,27 +123,31 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
 void ODDPanel::onClickODDTeleoperation()
 {
   auto req = std::make_shared<Teleoperation::Request>();
-  if (teleoperation_button_on) {
+  // req->teleoperation_button_status = teleoperation_button_on;
+  if (!client_teleoperation_->service_is_ready()) {
+    RCLCPP_INFO(raw_node_->get_logger(), "client is unavailable");
+    return;
+  }
+  auto response = client_teleoperation_->async_send_request(req);
+  if (response.get()->teleoperation_ready == 1
+      && teleoperation_button_on == false) {
+    teleoperation_button_ptr_->setStyleSheet("background-color: rgb(159, 186, 54)");
+    teleoperation_button_on = true;
+  }
+  else if (response.get()->teleoperation_ready == 0
+           && teleoperation_button_on == true) {
+    teleoperation_button_ptr_->setStyleSheet("background-color: rgb(106, 117, 126)");
     teleoperation_button_on = false;
-    req->teleoperation = scenery_msgs::msg::teleState::DRIVING;
   }
   else {
-    req->teleoperation = scenery_msgs::msg::teleState::TELEOPERATION;
-
-    RCLCPP_INFO(raw_node_->get_logger(), "client request");
-    teleoperation_button_on = true;
-
-    if (!client_teleoperation_->service_is_ready()) {
-      RCLCPP_INFO(raw_node_->get_logger(), "client is unavailable");
-      return;
-    }
+    teleoperation_button_on = false;
+    teleoperation_button_ptr_->setStyleSheet("background-color: rgb(217, 81, 23)");
+    RCLCPP_INFO(raw_node_->get_logger(), "teleoperation status error");
   }
-  client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture result) {
-    RCLCPP_INFO(raw_node_->get_logger(), "response: %s", result.get()->strResponse.c_str());
-  });
 }
 
 }  // namespace rviz_plugins
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(rviz_plugins::ODDPanel, rviz_common::Panel)
+
