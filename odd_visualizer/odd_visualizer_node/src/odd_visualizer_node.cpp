@@ -49,9 +49,21 @@ void OddVisualizer::onTeleoperationService(
         const scenery_msgs::srv::Teleoperation::Request::SharedPtr request,
         const scenery_msgs::srv::Teleoperation::Response::SharedPtr response)
 {
-  teleoperation_status = request->teleoperation;
-  std::string str("response success");
-  response->strResponse = str;
+  teleoperation_status = request->teleoperation_status;
+  // get the teleoperation request and the state machine is on state C: take over request
+  if (!teleoperation_status && tele_state_machine_->getCurrentState() == TeleState::RequestingForTakingOver) {
+    response->teleoperation_ready = 1;
+    tele_state_machine_->setCurrentState(TeleState::Teleoperation);
+  }
+  else if (teleoperation_status && tele_state_machine_->getCurrentState() == TeleState::Teleoperation) {
+    response->teleoperation_ready = 0;
+    tele_state_machine_->setCurrentState(TeleState::Driving);
+  }
+  else {
+    response->teleoperation_ready = 0;
+    RCLCPP_INFO(this->get_logger(), "teleoperation not allowed! Current state: %d", 
+                tele_state_machine_->getCurrentState());
+  }
 }
 
 std_msgs::msg::ColorRGBA OddVisualizer::getColorRGBAmsg(const std::vector<int64_t> &odd_color) {
@@ -156,6 +168,7 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
       }
     }
     odd_elements_publisher_->publish(oddMSG);
+    // std::cout << tele_state_machine_->getCurrentState()<<'\n';
   }
 }
 
@@ -444,7 +457,10 @@ void OddVisualizer::EmergencyStateCallback(const EmergencyState::ConstSharedPtr 
     std::unique_lock<std::mutex> stateMachineLock(lock_state_machine_);
     tele_state_machine_->checkAndSetCurrentState(msg);
     stateMachineLock.unlock();
+    std::cout << "override request!!!/n";
   }
+  // if (static_cast<int>(msg->state) > 0)
+  //   std::cout << "emergency current state: " << static_cast<int>(msg->state) <<'\n';
 }
 
 void OddVisualizer::AutowareStateCallback(const AutowareState::ConstSharedPtr msg) {
@@ -453,6 +469,8 @@ void OddVisualizer::AutowareStateCallback(const AutowareState::ConstSharedPtr ms
     tele_state_machine_->checkAndSetCurrentState(msg);
     stateMachineLock.unlock();
   }
+  // if (static_cast<int>(msg->state) > 0)
+  //   std::cout << "autoware current state: " << static_cast<int>(msg->state)  <<'\n';
 }
 
 void OddVisualizer::HazardStatusCallback(const HazardStatus::ConstSharedPtr msg) {

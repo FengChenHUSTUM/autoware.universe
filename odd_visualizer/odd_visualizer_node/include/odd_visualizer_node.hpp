@@ -121,9 +121,9 @@ private:
     size_t curIndex{0};
 
 
-    // teleoperation service
     TeleStateMachine *tele_state_machine_;
     std::mutex lock_state_machine_;
+    // teleoperation service: "0" for off; "1" for on
     uint8_t teleoperation_status{0};
 
 
