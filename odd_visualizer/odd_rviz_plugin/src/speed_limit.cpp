@@ -24,7 +24,7 @@ SpeedLimitDisplay::SpeedLimitDisplay()
 
   constexpr float height_4k = 2160.0;
   const float scale = static_cast<float>(screen_info->height) / height_4k;
-  const auto left = static_cast<int>(std::round(2160 * scale));
+  const auto left = static_cast<int>(std::round(2400 * scale));
   const auto top = static_cast<int>(std::round(128 * scale));
   const auto length = static_cast<int>(std::round(256 * scale));
 
@@ -121,27 +121,35 @@ void SpeedLimitDisplay::update(float wall_dt, float ros_dt)
     0, 0, property_length_->getInt(), property_length_->getInt(), handle_image_);
 
 
-  std::ostringstream speedLimitTitle, speedLimitValue;
-  speedLimitTitle << std::fixed << "Speed Limit\n";
-  speedLimitValue << std::fixed << std::setprecision(1) << steering << "km/h";
+  std::ostringstream speedLimitTitle, speedLimitValue, speedLimitUnit;
+  speedLimitTitle << std::fixed << "Speed Limit";
+  speedLimitValue << std::fixed << static_cast<int>(steering);
+  speedLimitUnit << std::fixed << "km/h";
 
   QFont font = painter.font();
   int fontSize = static_cast<int>((static_cast<double>(w)) * property_value_scale_->getFloat());
 
   font.setPixelSize(std::max(static_cast<int>(std::round(fontSize)), 1));
   font.setBold(true);
+  // the title (property_value_height_offset_->getInt() == 0)
   painter.drawText(
-  0, std::min(property_value_height_offset_->getInt() - static_cast<int>(std::round(fontSize / 2)), h - 1), w,
+  0, std::min(property_value_height_offset_->getInt() - static_cast<int>(std::round(fontSize / 2)) - 15, h - 1), property_length_->getInt(),
   std::max(h - property_value_height_offset_->getInt(), 1), Qt::AlignCenter | Qt::AlignTop,
   speedLimitTitle.str().c_str());
 
+  // km/h
+  painter.drawText(
+  0, std::min(property_value_height_offset_->getInt() + static_cast<int>(std::round(fontSize / 2)) + fontSize - 5, h - 1), property_length_->getInt(),
+  std::max(h - property_value_height_offset_->getInt(), 1), Qt::AlignCenter,
+  speedLimitUnit.str().c_str());
+
+  // value
   font.setPixelSize(
-    std::max(fontSize, 1));
+    std::max(fontSize + 16, 1));
   font.setBold(true);
   painter.setFont(font);
   painter.drawText(
-    0, std::min(property_value_height_offset_->getInt() + static_cast<int>(std::round(fontSize / 2)), h - 1), w,
-    std::max(h - property_value_height_offset_->getInt(), 1), Qt::AlignCenter | Qt::AlignBaseline,
+    0, property_value_height_offset_->getInt(), property_length_->getInt(), property_length_->getInt(), Qt::AlignCenter,
     speedLimitValue.str().c_str());
 
   painter.end();
