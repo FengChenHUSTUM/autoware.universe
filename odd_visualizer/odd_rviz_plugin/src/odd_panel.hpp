@@ -3,6 +3,7 @@
 
 
 #include <regex>
+#include <QTabWidget>
 #include <QLabel>
 #include <QPushButton>
 #include <QTableWidget> 
@@ -55,6 +56,15 @@ protected:
   rclcpp::Client<scenery_msgs::srv::Teleoperation>::SharedPtr client_teleoperation_;
 
   // rclcpp::Publisher<tier4_planning_msgs::msg::VelocityLimit>::SharedPtr pub_velocity_limit_;
+
+  QTabWidget * ODDTab_prt_;
+
+  QLabel * current_title_ptr_;
+  QLabel * current_general_description_ptr_;
+  QLabel * history_title_ptr_;
+  QLabel * history_general_description_ptr_;
+  QLabel * next_title_ptr_;
+  QLabel * next_general_description_ptr_;
 
   QLabel * current_lanelet_label_ptr_;
   QLabel * current_lanelet_ID_label_ptr_;

@@ -3,6 +3,7 @@
 
 #include <QHBoxLayout>
 #include <QString>
+#include <QFrame>
 #include <QVBoxLayout>
 #include <rviz_common/display_context.hpp>
 
@@ -17,9 +18,77 @@ namespace rviz_plugins
 {
 ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 {
+  ODDTab_prt_ = new QTabWidget(this);
+  // general infomation
+  auto * general_info_layout = new QVBoxLayout;
+  auto * general_info_layout_up = new QVBoxLayout;
+  auto * general_info_layout_down = new QHBoxLayout;
 
+  QSizePolicy frameSizePolicy;
+  frameSizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+  frameSizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+
+  current_title_ptr_ = new QLabel("Current Lanelet: ");
+  current_title_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+  current_title_ptr_->setStyleSheet("border: 0px solid");
+  current_title_ptr_->setMargin(5);
+
+  QSizePolicy labelSizePolicy;
+  labelSizePolicy.setHorizontalPolicy(QSizePolicy::Minimum);
+  current_title_ptr_->setSizePolicy(labelSizePolicy);
+
+  current_general_description_ptr_ = new QLabel("\n");
+  current_general_description_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+  general_info_layout_up->addWidget(current_title_ptr_);
+  general_info_layout_up->addWidget(current_general_description_ptr_);
+
+  auto upFrame = new QFrame(this);
+  upFrame->setLayout(general_info_layout_up);
+  upFrame->setStyleSheet("border: 1px solid");
+  upFrame->setSizePolicy(frameSizePolicy);
+
+  history_title_ptr_ = new QLabel("History Lanelet: ");
+  history_title_ptr_->setSizePolicy(labelSizePolicy);
+  history_title_ptr_->setStyleSheet("border: 0px solid");
+  history_general_description_ptr_ = new QLabel("\n");
+  history_general_description_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+  
+  next_title_ptr_ = new QLabel("Next Lanelet: ");
+  next_title_ptr_->setSizePolicy(labelSizePolicy);
+  next_title_ptr_->setStyleSheet("border: 0px solid");
+  next_general_description_ptr_ = new QLabel("\n");
+  next_general_description_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+  auto * left_tmp_layout = new QVBoxLayout;
+  left_tmp_layout->addWidget(history_title_ptr_);
+  left_tmp_layout->addWidget(history_general_description_ptr_);
+  auto leftFrame = new QFrame;
+  leftFrame->setLayout(left_tmp_layout);
+  leftFrame->setStyleSheet("border: 1px solid");
+  leftFrame->setSizePolicy(frameSizePolicy);
+
+  auto * right_tmp_layout = new QVBoxLayout;
+  right_tmp_layout->addWidget(next_title_ptr_);
+  right_tmp_layout->addWidget(next_general_description_ptr_);
+  auto rightFrame = new QFrame;
+  rightFrame->setLayout(right_tmp_layout);
+  rightFrame->setStyleSheet("border: 1px solid");
+  rightFrame->setSizePolicy(frameSizePolicy);
+
+  general_info_layout_down->addWidget(leftFrame);
+  general_info_layout_down->addWidget(rightFrame);
+
+  general_info_layout->addWidget(upFrame);
+  general_info_layout->addLayout(general_info_layout_down);
+
+  auto generalTab = new QWidget();
+  generalTab->setLayout(general_info_layout);
+
+  ODDTab_prt_->addTab(generalTab, "General");
+
+  // Details
   auto * up_layout = new QVBoxLayout;
-
   current_lanelet_attributes_table_prt_ = new QTableWidget(this);
   current_lanelet_label_ptr_ = new QLabel("Current Lanelet");
   current_lanelet_ID_label_ptr_ = new QLabel("NULL");
@@ -66,7 +135,13 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   down_layout->addLayout(history_lanelet_layout);
   down_layout->addLayout(next_lanelet_layout);
 
+  auto *laneletInfo_layout = new QVBoxLayout;
+  laneletInfo_layout->addLayout(up_layout);
+  laneletInfo_layout->addLayout(down_layout);
 
+  auto laneletDetails = new QWidget();
+  laneletDetails->setLayout(laneletInfo_layout);
+  ODDTab_prt_->addTab(laneletDetails, "Details");
 
   // teleoperation button
   teleoperation_button_ptr_ = new QPushButton("Teleoperation");
@@ -75,8 +150,7 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 
   // Layout
   auto * v_layout = new QVBoxLayout;
-  v_layout->addLayout(up_layout);
-  v_layout->addLayout(down_layout);
+  v_layout->addWidget(ODDTab_prt_);
   v_layout->addWidget(teleoperation_button_ptr_);
   setLayout(v_layout);
 }
@@ -99,6 +173,10 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
     {current_lanelet_ID_label_ptr_, current_lanelet_attributes_table_prt_},
     {next_lanelet_ID_label_ptr_, next_lanelet_attributes_table_prt_}};
 
+  std::vector<QLabel*> generalLables{
+    history_general_description_ptr_,
+    current_general_description_ptr_,
+    next_general_description_ptr_};
 
   size_t index = 0;
   for (auto lanelet : laneletList) {
@@ -110,13 +188,21 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
     tableHeaders << "Attribute" << "Value";
     lanelet.second->setHorizontalHeaderLabels(tableHeaders);
     size_t row = 0;
+    QString geDescription{};
     for (auto & attr : msg->laneletInfo[index].attributes) {
       if (row < RowSize) {
         lanelet.second->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(attr.attributeName)));
         lanelet.second->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
         row++;
       }
+      if (attr.attributeName == "one_way") {
+        attr.strValue == "yes"? geDescription.append("\none-way") : geDescription.append("\ntwo-way");
+      }
+      if (attr.attributeName == "location") {
+        geDescription.append("\nlocated in " + QString::fromStdString(attr.strValue));
+      }
     }
+    generalLables[index]->setText(geDescription);
     index++;
   }
 }
