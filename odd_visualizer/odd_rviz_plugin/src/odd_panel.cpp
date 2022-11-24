@@ -182,7 +182,11 @@ void ODDPanel::setIconTableStyle(QTableWidget *table) {
   table->verticalHeader()->setVisible(false);
   for (int i = 0; i < table->rowCount(); ++i) {
     for (int j = 0; j < table->columnCount(); ++j) {
-      table->setCellWidget(i, j, setTableItemFromAttr(attrVec[0]));
+      int index = i * table->columnCount() + j;
+      if (index < static_cast<int>(attrVec.size()))
+        table->setCellWidget(i, j, setTableItemFromAttr(attrVec[index]));
+      else
+        break;
     }
   }
 }
@@ -199,6 +203,7 @@ QWidget * ODDPanel::setTableItemFromAttr(const QString &attr){
   iconLayout->setAlignment(Qt::AlignCenter);
   tableItem->setLayout(iconLayout);
   tableItem->setStyleSheet("border:0px;");
+  tableItem->setToolTip(attr);
   // auto iconItem = new QTableWidgetItem;
   // iconItem->setSizeHint(QSize(32,32));
   // iconItem->setTextAlignment(Qt::AlignCenter);
