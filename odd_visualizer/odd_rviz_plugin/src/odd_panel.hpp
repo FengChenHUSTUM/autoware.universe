@@ -5,12 +5,14 @@
 #include <regex>
 #include <QTabWidget>
 #include <QLabel>
+#include <QIcon>
 #include <QPushButton>
 #include <QTableWidget> 
 #include <QSizePolicy>
 #include <QHeaderView>
 #include <rclcpp/rclcpp.hpp>
 #include <rviz_common/panel.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include <scenery_msgs/msg/odd_elements.hpp>
 #include <scenery_msgs/msg/tele_state.hpp>
@@ -57,10 +59,13 @@ protected:
 
   // rclcpp::Publisher<tier4_planning_msgs::msg::VelocityLimit>::SharedPtr pub_velocity_limit_;
 
+  QString path_to_current_folder;
+  std::vector<QString> attrVec;
   QTabWidget * ODDTab_prt_;
 
   QLabel * current_title_ptr_;
   QLabel * current_general_description_ptr_;
+  QTableWidget * current_general_table_ptr_;
   QLabel * history_title_ptr_;
   QLabel * history_general_description_ptr_;
   QLabel * next_title_ptr_;
@@ -79,6 +84,9 @@ protected:
 
   QPushButton * teleoperation_button_ptr_;
   bool teleoperation_button_on{false};
+
+  void setIconTableStyle(QTableWidget * table);
+  QWidget *setTableItemFromAttr(const QString &attr);
 };
 
 }  // namespace rviz_plugins

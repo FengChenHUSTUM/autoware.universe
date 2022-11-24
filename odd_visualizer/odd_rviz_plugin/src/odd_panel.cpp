@@ -19,6 +19,8 @@ namespace rviz_plugins
 ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 {
   ODDTab_prt_ = new QTabWidget(this);
+  path_to_current_folder = QString::fromStdString(ament_index_cpp::get_package_share_directory("odd_rviz_plugin"));
+  attrVec = {"location", "one_way", "speed_limit", "subtype", "type", "weather"};
   // general infomation
   auto * general_info_layout = new QVBoxLayout;
   auto * general_info_layout_up = new QVBoxLayout;
@@ -32,16 +34,19 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   current_title_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
   current_title_ptr_->setStyleSheet("border: 0px solid");
   current_title_ptr_->setMargin(5);
+  // current_title_ptr_->setMouseTracking(true);
+  // current_title_ptr_->setToolTip("test if it works");
 
   QSizePolicy labelSizePolicy;
   labelSizePolicy.setHorizontalPolicy(QSizePolicy::Minimum);
   current_title_ptr_->setSizePolicy(labelSizePolicy);
 
-  current_general_description_ptr_ = new QLabel("\n");
-  current_general_description_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+  current_general_table_ptr_ = new QTableWidget(this);
+  setIconTableStyle(current_general_table_ptr_);
 
   general_info_layout_up->addWidget(current_title_ptr_);
-  general_info_layout_up->addWidget(current_general_description_ptr_);
+  general_info_layout_up->addWidget(current_general_table_ptr_);
+  // general_info_layout_up->addWidget(current_general_description_ptr_);
 
   auto upFrame = new QFrame(this);
   upFrame->setLayout(general_info_layout_up);
@@ -166,6 +171,39 @@ void ODDPanel::onInitialize()
     "/odd_parameter/teleoperation", rmw_qos_profile_services_default);
 }
 
+void ODDPanel::setIconTableStyle(QTableWidget *table) {
+  table->setShowGrid(false);
+  // table->setIconSize(QSize(32,32));
+  table->setColumnCount(5);
+  table->setRowCount(2);
+  table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  table->horizontalHeader()->setVisible(false);
+  table->verticalHeader()->setVisible(false);
+  for (int i = 0; i < table->rowCount(); ++i) {
+    for (int j = 0; j < table->columnCount(); ++j) {
+      table->setCellWidget(i, j, setTableItemFromAttr(attrVec[0]));
+    }
+  }
+}
+
+QWidget * ODDPanel::setTableItemFromAttr(const QString &attr){
+  QIcon ODDIcon(path_to_current_folder + "/images/" + attr + ".png");
+  QWidget * tableItem = new QWidget();
+  QLabel *iconLabel = new QLabel(tableItem);
+  iconLabel->setMaximumSize(QSize(32,32));
+  iconLabel->setPixmap(ODDIcon.pixmap(QSize(32,32)));
+  iconLabel->setStyleSheet("border:0px;");
+  QHBoxLayout *iconLayout = new QHBoxLayout;
+  iconLayout->addWidget(iconLabel);
+  iconLayout->setAlignment(Qt::AlignCenter);
+  tableItem->setLayout(iconLayout);
+  tableItem->setStyleSheet("border:0px;");
+  // auto iconItem = new QTableWidgetItem;
+  // iconItem->setSizeHint(QSize(32,32));
+  // iconItem->setTextAlignment(Qt::AlignCenter);
+  return tableItem;
+}
 
 void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg) {
   std::list<std::pair<QLabel*, QTableWidget*>> laneletList{
@@ -173,10 +211,20 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
     {current_lanelet_ID_label_ptr_, current_lanelet_attributes_table_prt_},
     {next_lanelet_ID_label_ptr_, next_lanelet_attributes_table_prt_}};
 
-  std::vector<QLabel*> generalLables{
-    history_general_description_ptr_,
-    current_general_description_ptr_,
-    next_general_description_ptr_};
+  // std::vector<QLabel*> generalLables{
+  //   history_general_description_ptr_,
+  //   current_general_description_ptr_,
+  //   next_general_description_ptr_};
+
+  // //test on current lanelet: msg->laneletInfo[1]
+  // size_t curRowSize =  msg->laneletInfo[1].attributes.size() / 5 + 1;
+  // current_lanelet_attributes_table_prt_->setRowCount(curRowSize);
+  // size_t countRow = 0;
+  // for (auto & attr : msg->laneletInfo[1].attributes) {
+
+  // }
+
+
 
   size_t index = 0;
   for (auto lanelet : laneletList) {
@@ -184,6 +232,8 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
     size_t RowSize = msg->laneletInfo[index].attributes.size();
     lanelet.second->setRowCount(RowSize);
     lanelet.second->setColumnCount(2);
+    // lanelet.second->setFrameStyle(QFrame::NoFrame);
+    // lanelet.second->setShowGrid(false);
     QStringList tableHeaders;
     tableHeaders << "Attribute" << "Value";
     lanelet.second->setHorizontalHeaderLabels(tableHeaders);
@@ -195,14 +245,14 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
         lanelet.second->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(attr.strValue)));
         row++;
       }
-      if (attr.attributeName == "one_way") {
-        attr.strValue == "yes"? geDescription.append("\none-way") : geDescription.append("\ntwo-way");
-      }
-      if (attr.attributeName == "location") {
-        geDescription.append("\nlocated in " + QString::fromStdString(attr.strValue));
-      }
+      // if (attr.attributeName == "one_way") {
+      //   attr.strValue == "yes"? geDescription.append("\none-way") : geDescription.append("\ntwo-way");
+      // }
+      // if (attr.attributeName == "location") {
+      //   geDescription.append("\nlocated in " + QString::fromStdString(attr.strValue));
+      // }
     }
-    generalLables[index]->setText(geDescription);
+    // generalLables[index]->setText(geDescription);
     index++;
   }
 }
