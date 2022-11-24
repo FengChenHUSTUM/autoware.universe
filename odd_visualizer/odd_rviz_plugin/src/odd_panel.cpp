@@ -21,6 +21,7 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   ODDTab_prt_ = new QTabWidget(this);
   path_to_current_folder = QString::fromStdString(ament_index_cpp::get_package_share_directory("odd_rviz_plugin"));
   attrVec = {"location", "one_way", "speed_limit", "subtype", "type", "weather"};
+  iconSize = QSize(32, 32);
   // general infomation
   auto * general_info_layout = new QVBoxLayout;
   auto * general_info_layout_up = new QVBoxLayout;
@@ -171,7 +172,7 @@ void ODDPanel::onInitialize()
     "/odd_parameter/teleoperation", rmw_qos_profile_services_default);
 }
 
-void ODDPanel::setIconTableStyle(QTableWidget *table) {
+void ODDPanel::setIconTableStyle(QTableWidget * table) {
   table->setShowGrid(false);
   // table->setIconSize(QSize(32,32));
   table->setColumnCount(5);
@@ -180,6 +181,10 @@ void ODDPanel::setIconTableStyle(QTableWidget *table) {
   table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   table->horizontalHeader()->setVisible(false);
   table->verticalHeader()->setVisible(false);
+  setItemInTable(table);
+}
+
+void ODDPanel::setItemInTable(QTableWidget * table) {
   for (int i = 0; i < table->rowCount(); ++i) {
     for (int j = 0; j < table->columnCount(); ++j) {
       int index = i * table->columnCount() + j;
@@ -194,15 +199,20 @@ void ODDPanel::setIconTableStyle(QTableWidget *table) {
 QWidget * ODDPanel::setTableItemFromAttr(const QString &attr){
   QIcon ODDIcon(path_to_current_folder + "/images/" + attr + ".png");
   QWidget * tableItem = new QWidget();
-  QLabel *iconLabel = new QLabel(tableItem);
-  iconLabel->setMaximumSize(QSize(32,32));
-  iconLabel->setPixmap(ODDIcon.pixmap(QSize(32,32)));
+  QLabel *iconLabel = new QLabel();
+  iconLabel->setMaximumSize(iconSize);
+  iconLabel->setPixmap(ODDIcon.pixmap(iconSize));
   iconLabel->setStyleSheet("border:0px;");
-  QHBoxLayout *iconLayout = new QHBoxLayout;
+  QVBoxLayout *iconLayout = new QVBoxLayout;
   iconLayout->addWidget(iconLabel);
-  iconLayout->setAlignment(Qt::AlignCenter);
-  tableItem->setLayout(iconLayout);
+  iconLayout->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+  QVBoxLayout *itemLayout = new QVBoxLayout;
+  itemLayout->setAlignment(Qt::AlignCenter);
+  itemLayout->addLayout(iconLayout);
+  itemLayout->addWidget(new QLabel(attr));
+  tableItem->setLayout(itemLayout);
   tableItem->setStyleSheet("border:0px;");
+  tableItem->setMouseTracking(true);
   tableItem->setToolTip(attr);
   // auto iconItem = new QTableWidgetItem;
   // iconItem->setSizeHint(QSize(32,32));
@@ -215,19 +225,33 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
     {history_lanelet_ID_label_ptr_, history_lanelet_attributes_table_prt_},
     {current_lanelet_ID_label_ptr_, current_lanelet_attributes_table_prt_},
     {next_lanelet_ID_label_ptr_, next_lanelet_attributes_table_prt_}};
-
   // std::vector<QLabel*> generalLables{
   //   history_general_description_ptr_,
   //   current_general_description_ptr_,
   //   next_general_description_ptr_};
 
-  // //test on current lanelet: msg->laneletInfo[1]
-  // size_t curRowSize =  msg->laneletInfo[1].attributes.size() / 5 + 1;
-  // current_lanelet_attributes_table_prt_->setRowCount(curRowSize);
-  // size_t countRow = 0;
-  // for (auto & attr : msg->laneletInfo[1].attributes) {
-
-  // }
+  //test on current lanelet: msg->laneletInfo[1]
+  setItemInTable(current_general_table_ptr_);
+  size_t countAttr = 0;
+  for (int i = 0; i < current_general_table_ptr_->rowCount(); ++i) {
+    for (int j = 0; j < current_general_table_ptr_->columnCount(); ++j) {
+      int index = i * current_general_table_ptr_->columnCount() + j;
+      if (index < static_cast<int>(msg->laneletInfo[1].attributes.size())) {
+        QString iconName = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr].attributeName);
+        if (std::count(attrVec.begin(), attrVec.end(), iconName)) {
+          QString iconValue = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr].strValue);
+          if (iconValue == "yes") iconValue = "one way";
+          if (iconValue == "no") iconValue = "two way";
+          if (iconValue == "30") iconValue = "speed limit";
+          current_general_table_ptr_->setCellWidget(i, j, 
+            setTableItemFromAttr(iconValue));
+        } // if attribut is supported
+      }// loop not exceed the size of lanelet attributes
+      else
+        break;
+      countAttr++;
+    }
+  }
 
 
 

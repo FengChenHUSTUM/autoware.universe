@@ -62,7 +62,7 @@ protected:
   QString path_to_current_folder;
   std::vector<QString> attrVec;
   QTabWidget * ODDTab_prt_;
-
+  QSize iconSize;
   QLabel * current_title_ptr_;
   QLabel * current_general_description_ptr_;
   QTableWidget * current_general_table_ptr_;
@@ -86,6 +86,7 @@ protected:
   bool teleoperation_button_on{false};
 
   void setIconTableStyle(QTableWidget * table);
+  void setItemInTable(QTableWidget * table);
   QWidget *setTableItemFromAttr(const QString &attr);
 };
 
