@@ -236,10 +236,15 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
   for (int i = 0; i < current_general_table_ptr_->rowCount(); ++i) {
     for (int j = 0; j < current_general_table_ptr_->columnCount(); ++j) {
       int index = i * current_general_table_ptr_->columnCount() + j;
-      if (index < static_cast<int>(msg->laneletInfo[1].attributes.size())) {
+      if (index < static_cast<int>(msg->laneletInfo[1].attributes.size()) && 
+          countAttr < msg->laneletInfo[1].attributes.size()) {
         QString iconName = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr].attributeName);
-        if (std::count(attrVec.begin(), attrVec.end(), iconName)) {
-          QString iconValue = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr].strValue);
+        while (countAttr < msg->laneletInfo[1].attributes.size()
+               && !std::count(attrVec.begin(), attrVec.end(), iconName)){
+          iconName = QString::fromStdString(msg->laneletInfo[1].attributes[++countAttr].attributeName);
+        }
+        if (countAttr < msg->laneletInfo[1].attributes.size()){
+          QString iconValue = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr++].strValue);
           if (iconValue == "yes") iconValue = "one way";
           if (iconValue == "no") iconValue = "two way";
           if (iconValue == "30") iconValue = "speed limit";
@@ -247,9 +252,6 @@ void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg
             setTableItemFromAttr(iconValue));
         } // if attribut is supported
       }// loop not exceed the size of lanelet attributes
-      else
-        break;
-      countAttr++;
     }
   }
 
