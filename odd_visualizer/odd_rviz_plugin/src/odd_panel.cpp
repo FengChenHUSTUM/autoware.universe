@@ -124,6 +124,8 @@ QVBoxLayout *ODDPanel::createLaneletDetailsLayout(QTableWidget *table, QLabel *i
   up_layout->addWidget(id);
   up_layout->addWidget(table);
   up_layout->addStretch();
+  up_layout->setMargin(0);
+  up_layout->setSpacing(0);
   return up_layout;
 }
 
