@@ -68,18 +68,43 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   // toolboxfortest->addItem((QWidget*)historyBox, tr("history lanelet"));
   // toolboxfortest->addItem((QWidget*)nextBox, tr("next lanelet"));
   // laneletInfo_layout->addWidget(toolboxfortest);
-  laneletInfo_layout->addLayout(createLaneletDetailsLayout(
+
+  current_button_ptr_ = new QPushButton;
+  current_button_ptr_->setText("current lanele");
+  history_button_ptr_ = new QPushButton;
+  history_button_ptr_->setText("history lanele");
+  next_button_ptr_ = new QPushButton;
+  next_button_ptr_->setText("next lanele");
+
+  laneletInfo_layout->addWidget(current_button_ptr_);
+  current_Frame_ptr_ = new QFrame;
+  current_Frame_ptr_->setLayout(createLaneletDetailsLayout(
     current_lanelet_attributes_table_prt_,
     current_lanelet_label_ptr_,
     current_lanelet_ID_label_ptr_));
-  laneletInfo_layout->addLayout(createLaneletDetailsLayout(
+  laneletInfo_layout->addWidget(current_Frame_ptr_);
+
+  laneletInfo_layout->addWidget(history_button_ptr_);
+  history_Frame_ptr_ = new QFrame;
+  history_Frame_ptr_->setLayout(createLaneletDetailsLayout(
     history_lanelet_attributes_table_prt_,
     history_lanelet_label_ptr_,
     history_lanelet_ID_label_ptr_));
-  laneletInfo_layout->addLayout(createLaneletDetailsLayout(
+  laneletInfo_layout->addWidget(history_Frame_ptr_);
+
+  laneletInfo_layout->addWidget(next_button_ptr_);
+  next_Frame_ptr_ = new QFrame;
+  next_Frame_ptr_->setLayout(createLaneletDetailsLayout(
     next_lanelet_attributes_table_prt_,
     next_lanelet_label_ptr_,
     next_lanelet_ID_label_ptr_));
+  laneletInfo_layout->addWidget(next_Frame_ptr_);
+  laneletInfo_layout->addStretch();
+  laneletInfo_layout->setMargin(0);
+  laneletInfo_layout->setSpacing(0);
+  connect(current_button_ptr_, SIGNAL(clicked()), SLOT(onClickCurrent()));
+  connect(history_button_ptr_, SIGNAL(clicked()), SLOT(onClickHistory()));
+  connect(next_button_ptr_, SIGNAL(clicked()), SLOT(onClickNext()));
 
   auto laneletDetails = new QWidget();
   laneletDetails->setLayout(laneletInfo_layout);
@@ -290,6 +315,41 @@ void ODDPanel::onClickODDTeleoperation()
   });  
 
 }
+
+  void ODDPanel::onClickCurrent(){
+    if (!current_btn_on) {
+      current_Frame_ptr_->setVisible(false);
+      current_btn_on = true;
+    }
+    else {
+      current_Frame_ptr_->setVisible(true);
+      current_btn_on = false;
+    }
+  }
+
+  void ODDPanel::onClickHistory(){
+    if (!history_btn_on) {
+      history_Frame_ptr_->setVisible(false);
+      history_btn_on = true;
+    }
+    else {
+      history_Frame_ptr_->setVisible(true);
+      history_btn_on = false;
+    }
+  }
+
+  void ODDPanel::onClickNext(){
+    if (!next_btn_on) {
+      next_Frame_ptr_->setVisible(false);
+      next_btn_on = true;
+    }
+    else {
+      next_Frame_ptr_->setVisible(true);
+      next_btn_on = false;
+    }
+  }
+
+
 
 }  // namespace rviz_plugins
 

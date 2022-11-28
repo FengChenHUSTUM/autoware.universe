@@ -59,6 +59,9 @@ public Q_SLOTS:  // NOLINT for Qt
   // void onClickEmergencyButton();
 
   void onClickODDTeleoperation();
+  void onClickCurrent();
+  void onClickHistory();
+  void onClickNext();
 
 protected:
   void onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg);
@@ -80,6 +83,10 @@ protected:
   QTableWidget * history_general_table_ptr_;
   QTableWidget * next_general_table_ptr_;
 
+  QFrame * current_Frame_ptr_;
+  QFrame * history_Frame_ptr_;
+  QFrame * next_Frame_ptr_;
+
 
   QLabel * current_lanelet_label_ptr_;
   QLabel * current_lanelet_ID_label_ptr_;
@@ -87,6 +94,16 @@ protected:
   QLabel * history_lanelet_ID_label_ptr_;
   QLabel * next_lanelet_label_ptr_;
   QLabel * next_lanelet_ID_label_ptr_;
+
+  QPushButton * current_button_ptr_;
+  QPushButton * history_button_ptr_;
+  QPushButton * next_button_ptr_;
+
+  bool current_btn_on{false};
+  bool history_btn_on{false};
+  bool next_btn_on{false};
+
+
 
   QTableWidget * current_lanelet_attributes_table_prt_;
   QTableWidget * history_lanelet_attributes_table_prt_;
