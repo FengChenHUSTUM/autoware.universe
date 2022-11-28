@@ -97,6 +97,7 @@ protected:
   void setItemInTable(QTableWidget * table);
   QFrame *createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable);
   QWidget *setTableItemFromAttr(const QString &attr);
+  void updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, QTableWidget *table);
 };
 
 }  // namespace rviz_plugins

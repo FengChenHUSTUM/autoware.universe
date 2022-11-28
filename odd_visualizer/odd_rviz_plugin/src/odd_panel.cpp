@@ -194,45 +194,46 @@ QWidget * ODDPanel::setTableItemFromAttr(const QString &attr){
   return tableItem;
 }
 
-void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg) {
-  std::list<std::pair<QLabel*, QTableWidget*>> laneletList{
-    {history_lanelet_ID_label_ptr_, history_lanelet_attributes_table_prt_},
-    {current_lanelet_ID_label_ptr_, current_lanelet_attributes_table_prt_},
-    {next_lanelet_ID_label_ptr_, next_lanelet_attributes_table_prt_}};
-  // std::vector<QLabel*> generalLables{
-  //   history_general_description_ptr_,
-  //   current_general_description_ptr_,
-  //   next_general_description_ptr_};
-
+void ODDPanel::updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, QTableWidget *table) {
   //test on current lanelet: msg->laneletInfo[1]
-  setItemInTable(current_general_table_ptr_);
+  setItemInTable(table);
   size_t countAttr = 0;
-  for (int i = 0; i < current_general_table_ptr_->rowCount(); ++i) {
-    for (int j = 0; j < current_general_table_ptr_->columnCount(); ++j) {
-      int index = i * current_general_table_ptr_->columnCount() + j;
-      if (index < static_cast<int>(msg->laneletInfo[1].attributes.size()) && 
-          countAttr < msg->laneletInfo[1].attributes.size()) {
-        QString iconName = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr].attributeName);
-        while (countAttr < msg->laneletInfo[1].attributes.size()
+  for (int i = 0; i < table->rowCount(); ++i) {
+    for (int j = 0; j < table->columnCount(); ++j) {
+      int index = i * table->columnCount() + j;
+      if (index < static_cast<int>(laneletInfo.attributes.size()) && 
+          countAttr < laneletInfo.attributes.size()) {
+        QString iconName = QString::fromStdString(laneletInfo.attributes[countAttr].attributeName);
+        while (countAttr < laneletInfo.attributes.size()
                && !std::count(attrVec.begin(), attrVec.end(), iconName)){
-          iconName = QString::fromStdString(msg->laneletInfo[1].attributes[++countAttr].attributeName);
+          iconName = QString::fromStdString(laneletInfo.attributes[++countAttr].attributeName);
         }
-        if (countAttr < msg->laneletInfo[1].attributes.size()){
-          QString iconValue = QString::fromStdString(msg->laneletInfo[1].attributes[countAttr++].strValue);
+        if (countAttr < laneletInfo.attributes.size()){
+          QString iconValue = QString::fromStdString(laneletInfo.attributes[countAttr++].strValue);
           if (iconValue == "yes") iconValue = "one way";
           if (iconValue == "no") iconValue = "two way";
           if (iconValue == "30") iconValue = "speed limit";
-          current_general_table_ptr_->setCellWidget(i, j, 
-            setTableItemFromAttr(iconValue));
+          table->setCellWidget(i, j, setTableItemFromAttr(iconValue));
         } // if attribut is supported
       }// loop not exceed the size of lanelet attributes
     }
   }
+}
 
+void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg) {
+  
+  // update information in tab "General"
+  updateDetails(msg->laneletInfo[1], current_general_table_ptr_);
+  updateDetails(msg->laneletInfo[0], history_general_table_ptr_);
+  updateDetails(msg->laneletInfo[2], next_general_table_ptr_);
 
-
+  // update informations in tab "Details"
+  std::list<std::pair<QLabel*, QTableWidget*>> laneletDetailsList{
+    {history_lanelet_ID_label_ptr_, history_lanelet_attributes_table_prt_},
+    {current_lanelet_ID_label_ptr_, current_lanelet_attributes_table_prt_},
+    {next_lanelet_ID_label_ptr_, next_lanelet_attributes_table_prt_}};
   size_t index = 0;
-  for (auto lanelet : laneletList) {
+  for (auto lanelet : laneletDetailsList) {
     lanelet.first->setText("Lanelet ID: " + QString::number(msg->laneletInfo[index].laneletID));
     size_t RowSize = msg->laneletInfo[index].attributes.size();
     lanelet.second->setRowCount(RowSize);
