@@ -31,64 +31,55 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   general_info_layout->addWidget(createLaneletIconFrame(current_title_ptr_, current_general_table_ptr_));
   general_info_layout->addWidget(createLaneletIconFrame(history_title_ptr_, history_general_table_ptr_));
   general_info_layout->addWidget(createLaneletIconFrame(next_title_ptr_, next_general_table_ptr_));
-  // general_info_layout->addLayout(general_info_layout_down);
 
   auto generalTab = new QWidget();
   generalTab->setLayout(general_info_layout);
-
   ODDTab_prt_->addTab(generalTab, "General");
 
   // Details
-  auto * up_layout = new QVBoxLayout;
   current_lanelet_attributes_table_prt_ = new QTableWidget(this);
-  current_lanelet_label_ptr_ = new QLabel("Current Lanelet");
-  current_lanelet_ID_label_ptr_ = new QLabel("NULL");
-  current_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
-  current_lanelet_attributes_table_prt_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  current_lanelet_attributes_table_prt_->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  current_lanelet_attributes_table_prt_->verticalHeader()->setVisible(false);
-  up_layout->addWidget(current_lanelet_label_ptr_);
-  up_layout->addWidget(current_lanelet_ID_label_ptr_);
-  up_layout->addWidget(current_lanelet_attributes_table_prt_);
-
-  auto * down_layout = new QHBoxLayout;
-
-  // history lanelet
   history_lanelet_attributes_table_prt_ = new QTableWidget(this);
-  history_lanelet_attributes_table_prt_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  history_lanelet_attributes_table_prt_->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  history_lanelet_attributes_table_prt_->verticalHeader()->setVisible(false);
-
-
-  history_lanelet_label_ptr_ = new QLabel("History Lanelet");
-  history_lanelet_ID_label_ptr_ = new QLabel("NULL");
-  history_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
-  auto * history_lanelet_layout = new QVBoxLayout;
-  history_lanelet_layout->addWidget(history_lanelet_label_ptr_);
-  history_lanelet_layout->addWidget(history_lanelet_ID_label_ptr_);
-  history_lanelet_layout->addWidget(history_lanelet_attributes_table_prt_);
-
-  // next lanelet
   next_lanelet_attributes_table_prt_ = new QTableWidget(this);
-  next_lanelet_attributes_table_prt_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  next_lanelet_attributes_table_prt_->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  next_lanelet_attributes_table_prt_->verticalHeader()->setVisible(false);
-
-
+  current_lanelet_label_ptr_ = new QLabel("Current Lanelet");
+  history_lanelet_label_ptr_ = new QLabel("History Lanelet");
   next_lanelet_label_ptr_ = new QLabel("Next Lanelet");
+  current_lanelet_ID_label_ptr_ = new QLabel("NULL");
+  history_lanelet_ID_label_ptr_ = new QLabel("NULL");
   next_lanelet_ID_label_ptr_ = new QLabel("NULL");
-  next_lanelet_label_ptr_->setAlignment(Qt::AlignLeft);
-  auto * next_lanelet_layout = new QVBoxLayout;
-  next_lanelet_layout->addWidget(next_lanelet_label_ptr_);
-  next_lanelet_layout->addWidget(next_lanelet_ID_label_ptr_);
-  next_lanelet_layout->addWidget(next_lanelet_attributes_table_prt_);
 
-  down_layout->addLayout(history_lanelet_layout);
-  down_layout->addLayout(next_lanelet_layout);
-
-  auto *laneletInfo_layout = new QVBoxLayout;
-  laneletInfo_layout->addLayout(up_layout);
-  laneletInfo_layout->addLayout(down_layout);
+  auto laneletInfo_layout = new QVBoxLayout;
+  // auto currentBox = new QGroupBox;
+  // auto historyBox = new QGroupBox;
+  // auto nextBox = new QGroupBox;
+  // currentBox->setLayout(createLaneletDetailsLayout(
+  //   current_lanelet_attributes_table_prt_,
+  //   current_lanelet_label_ptr_,
+  //   current_lanelet_ID_label_ptr_));
+  // historyBox->setLayout(createLaneletDetailsLayout(
+  //   history_lanelet_attributes_table_prt_,
+  //   history_lanelet_label_ptr_,
+  //   history_lanelet_ID_label_ptr_));
+  // nextBox->setLayout(createLaneletDetailsLayout(
+  //   next_lanelet_attributes_table_prt_,
+  //   next_lanelet_label_ptr_,
+  //   next_lanelet_ID_label_ptr_));
+  // auto toolboxfortest = new QToolBox;
+  // toolboxfortest->addItem((QWidget*)currentBox, tr("current lanelet"));
+  // toolboxfortest->addItem((QWidget*)historyBox, tr("history lanelet"));
+  // toolboxfortest->addItem((QWidget*)nextBox, tr("next lanelet"));
+  // laneletInfo_layout->addWidget(toolboxfortest);
+  laneletInfo_layout->addLayout(createLaneletDetailsLayout(
+    current_lanelet_attributes_table_prt_,
+    current_lanelet_label_ptr_,
+    current_lanelet_ID_label_ptr_));
+  laneletInfo_layout->addLayout(createLaneletDetailsLayout(
+    history_lanelet_attributes_table_prt_,
+    history_lanelet_label_ptr_,
+    history_lanelet_ID_label_ptr_));
+  laneletInfo_layout->addLayout(createLaneletDetailsLayout(
+    next_lanelet_attributes_table_prt_,
+    next_lanelet_label_ptr_,
+    next_lanelet_ID_label_ptr_));
 
   auto laneletDetails = new QWidget();
   laneletDetails->setLayout(laneletInfo_layout);
@@ -115,6 +106,19 @@ void ODDPanel::onInitialize()
 
   client_teleoperation_ = raw_node_->create_client<scenery_msgs::srv::Teleoperation>(
     "/odd_parameter/teleoperation", rmw_qos_profile_services_default);
+}
+
+QVBoxLayout *ODDPanel::createLaneletDetailsLayout(QTableWidget *table, QLabel *title, QLabel *id){
+  auto * up_layout = new QVBoxLayout;
+  title->setAlignment(Qt::AlignLeft);
+  table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  table->verticalHeader()->setVisible(false);
+  up_layout->addWidget(title);
+  up_layout->addWidget(id);
+  up_layout->addWidget(table);
+  up_layout->addStretch();
+  return up_layout;
 }
 
 QFrame *ODDPanel::createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable) {
@@ -221,7 +225,7 @@ void ODDPanel::updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, Q
 }
 
 void ODDPanel::onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg) {
-  
+
   // update information in tab "General"
   updateDetails(msg->laneletInfo[1], current_general_table_ptr_);
   updateDetails(msg->laneletInfo[0], history_general_table_ptr_);

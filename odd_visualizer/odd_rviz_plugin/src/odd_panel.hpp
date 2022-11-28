@@ -15,6 +15,8 @@
 #include <QVBoxLayout>
 #include <QString>
 #include <QFrame>
+#include <QToolBox>
+#include <QGroupBox>
 #include <rclcpp/rclcpp.hpp>
 #include <rviz_common/panel.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -96,6 +98,7 @@ protected:
   void setIconTableStyle(QTableWidget * table);
   void setItemInTable(QTableWidget * table);
   QFrame *createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable);
+  QVBoxLayout *createLaneletDetailsLayout(QTableWidget *table, QLabel *title, QLabel *id);
   QWidget *setTableItemFromAttr(const QString &attr);
   void updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, QTableWidget *table);
 };
