@@ -1,14 +1,7 @@
 
 #include "odd_panel.hpp"
 
-#include <QHBoxLayout>
-#include <QString>
-#include <QFrame>
-#include <QVBoxLayout>
-#include <rviz_common/display_context.hpp>
 
-#include <memory>
-#include <string>
 
 inline std::string Bool2String(const bool var) { return var ? "True" : "False"; }
 
@@ -20,73 +13,25 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 {
   ODDTab_prt_ = new QTabWidget(this);
   path_to_current_folder = QString::fromStdString(ament_index_cpp::get_package_share_directory("odd_rviz_plugin"));
+
+  // Edit the keys in attrVec to determin which attributes are supposed to be presented
   attrVec = {"location", "one_way", "speed_limit", "subtype", "type", "weather"};
+
   iconSize = QSize(32, 32);
   // general infomation
   auto * general_info_layout = new QVBoxLayout;
-  auto * general_info_layout_up = new QVBoxLayout;
-  auto * general_info_layout_down = new QHBoxLayout;
-
-  QSizePolicy frameSizePolicy;
-  frameSizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
-  frameSizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
 
   current_title_ptr_ = new QLabel("Current Lanelet: ");
-  current_title_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-  current_title_ptr_->setStyleSheet("border: 0px solid");
-  current_title_ptr_->setMargin(5);
-  // current_title_ptr_->setMouseTracking(true);
-  // current_title_ptr_->setToolTip("test if it works");
-
-  QSizePolicy labelSizePolicy;
-  labelSizePolicy.setHorizontalPolicy(QSizePolicy::Minimum);
-  current_title_ptr_->setSizePolicy(labelSizePolicy);
-
-  current_general_table_ptr_ = new QTableWidget(this);
-  setIconTableStyle(current_general_table_ptr_);
-
-  general_info_layout_up->addWidget(current_title_ptr_);
-  general_info_layout_up->addWidget(current_general_table_ptr_);
-  // general_info_layout_up->addWidget(current_general_description_ptr_);
-
-  auto upFrame = new QFrame(this);
-  upFrame->setLayout(general_info_layout_up);
-  upFrame->setStyleSheet("border: 1px solid");
-  upFrame->setSizePolicy(frameSizePolicy);
-
   history_title_ptr_ = new QLabel("History Lanelet: ");
-  history_title_ptr_->setSizePolicy(labelSizePolicy);
-  history_title_ptr_->setStyleSheet("border: 0px solid");
-  history_general_description_ptr_ = new QLabel("\n");
-  history_general_description_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-  
   next_title_ptr_ = new QLabel("Next Lanelet: ");
-  next_title_ptr_->setSizePolicy(labelSizePolicy);
-  next_title_ptr_->setStyleSheet("border: 0px solid");
-  next_general_description_ptr_ = new QLabel("\n");
-  next_general_description_ptr_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+  current_general_table_ptr_ = new QTableWidget(this);
+  history_general_table_ptr_ = new QTableWidget(this);
+  next_general_table_ptr_ = new QTableWidget(this);
 
-  auto * left_tmp_layout = new QVBoxLayout;
-  left_tmp_layout->addWidget(history_title_ptr_);
-  left_tmp_layout->addWidget(history_general_description_ptr_);
-  auto leftFrame = new QFrame;
-  leftFrame->setLayout(left_tmp_layout);
-  leftFrame->setStyleSheet("border: 1px solid");
-  leftFrame->setSizePolicy(frameSizePolicy);
-
-  auto * right_tmp_layout = new QVBoxLayout;
-  right_tmp_layout->addWidget(next_title_ptr_);
-  right_tmp_layout->addWidget(next_general_description_ptr_);
-  auto rightFrame = new QFrame;
-  rightFrame->setLayout(right_tmp_layout);
-  rightFrame->setStyleSheet("border: 1px solid");
-  rightFrame->setSizePolicy(frameSizePolicy);
-
-  general_info_layout_down->addWidget(leftFrame);
-  general_info_layout_down->addWidget(rightFrame);
-
-  general_info_layout->addWidget(upFrame);
-  general_info_layout->addLayout(general_info_layout_down);
+  general_info_layout->addWidget(createLaneletIconFrame(current_title_ptr_, current_general_table_ptr_));
+  general_info_layout->addWidget(createLaneletIconFrame(history_title_ptr_, history_general_table_ptr_));
+  general_info_layout->addWidget(createLaneletIconFrame(next_title_ptr_, next_general_table_ptr_));
+  // general_info_layout->addLayout(general_info_layout_down);
 
   auto generalTab = new QWidget();
   generalTab->setLayout(general_info_layout);
@@ -170,6 +115,35 @@ void ODDPanel::onInitialize()
 
   client_teleoperation_ = raw_node_->create_client<scenery_msgs::srv::Teleoperation>(
     "/odd_parameter/teleoperation", rmw_qos_profile_services_default);
+}
+
+QFrame *ODDPanel::createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable) {
+  auto * general_info_layout_up = new QVBoxLayout;
+  QSizePolicy frameSizePolicy;
+  frameSizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+  frameSizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+
+  laneletTitle->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+  laneletTitle->setStyleSheet("border: 0px solid");
+  laneletTitle->setMargin(5);
+  // current_title_ptr_->setMouseTracking(true);
+  // current_title_ptr_->setToolTip("test if it works");
+
+  QSizePolicy labelSizePolicy;
+  labelSizePolicy.setHorizontalPolicy(QSizePolicy::Minimum);
+  laneletTitle->setSizePolicy(labelSizePolicy);
+
+  setIconTableStyle(laneletTable);
+
+  general_info_layout_up->addWidget(laneletTitle);
+  general_info_layout_up->addWidget(laneletTable);
+  // general_info_layout_up->addWidget(current_general_description_ptr_);
+
+  auto upFrame = new QFrame(this);
+  upFrame->setLayout(general_info_layout_up);
+  upFrame->setStyleSheet("border: 1px solid");
+  upFrame->setSizePolicy(frameSizePolicy);
+  return upFrame;
 }
 
 void ODDPanel::setIconTableStyle(QTableWidget * table) {

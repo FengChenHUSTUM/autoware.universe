@@ -10,14 +10,22 @@
 #include <QTableWidget> 
 #include <QSizePolicy>
 #include <QHeaderView>
+#include <QEvent>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QString>
+#include <QFrame>
 #include <rclcpp/rclcpp.hpp>
 #include <rviz_common/panel.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <rviz_common/display_context.hpp>
 
 #include <scenery_msgs/msg/odd_elements.hpp>
 #include <scenery_msgs/msg/tele_state.hpp>
 #include <scenery_msgs/srv/teleoperation.hpp>
 
+#include <memory>
+#include <string>
 using scenery_msgs::srv::Teleoperation;
 
 
@@ -64,12 +72,12 @@ protected:
   QTabWidget * ODDTab_prt_;
   QSize iconSize;
   QLabel * current_title_ptr_;
-  QLabel * current_general_description_ptr_;
-  QTableWidget * current_general_table_ptr_;
   QLabel * history_title_ptr_;
-  QLabel * history_general_description_ptr_;
   QLabel * next_title_ptr_;
-  QLabel * next_general_description_ptr_;
+  QTableWidget * current_general_table_ptr_;
+  QTableWidget * history_general_table_ptr_;
+  QTableWidget * next_general_table_ptr_;
+
 
   QLabel * current_lanelet_label_ptr_;
   QLabel * current_lanelet_ID_label_ptr_;
@@ -87,6 +95,7 @@ protected:
 
   void setIconTableStyle(QTableWidget * table);
   void setItemInTable(QTableWidget * table);
+  QFrame *createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable);
   QWidget *setTableItemFromAttr(const QString &attr);
 };
 
