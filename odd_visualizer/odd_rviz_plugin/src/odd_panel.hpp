@@ -83,16 +83,14 @@ protected:
   QTableWidget * history_general_table_ptr_;
   QTableWidget * next_general_table_ptr_;
 
+  QIcon dropDownIcon;
+  QIcon foldIcon;
   QFrame * current_Frame_ptr_;
   QFrame * history_Frame_ptr_;
   QFrame * next_Frame_ptr_;
 
-
-  QLabel * current_lanelet_label_ptr_;
   QLabel * current_lanelet_ID_label_ptr_;
-  QLabel * history_lanelet_label_ptr_;
   QLabel * history_lanelet_ID_label_ptr_;
-  QLabel * next_lanelet_label_ptr_;
   QLabel * next_lanelet_ID_label_ptr_;
 
   QPushButton * current_button_ptr_;
@@ -114,8 +112,9 @@ protected:
 
   void setIconTableStyle(QTableWidget * table);
   void setItemInTable(QTableWidget * table);
+  
   QFrame *createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable);
-  QVBoxLayout *createLaneletDetailsLayout(QTableWidget *table, QLabel *title, QLabel *id);
+  QVBoxLayout *createLaneletDetailsLayout(QTableWidget *table, QLabel *id);
   QWidget *setTableItemFromAttr(const QString &attr);
   void updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, QTableWidget *table);
 };

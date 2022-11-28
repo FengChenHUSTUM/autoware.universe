@@ -13,7 +13,8 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
 {
   ODDTab_prt_ = new QTabWidget(this);
   path_to_current_folder = QString::fromStdString(ament_index_cpp::get_package_share_directory("odd_rviz_plugin"));
-
+  dropDownIcon = QIcon(path_to_current_folder + "/images/dropdown.png");
+  foldIcon = QIcon(path_to_current_folder + "/images/fold.png");
   // Edit the keys in attrVec to determin which attributes are supposed to be presented
   attrVec = {"location", "one_way", "speed_limit", "subtype", "type", "weather"};
 
@@ -40,47 +41,31 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   current_lanelet_attributes_table_prt_ = new QTableWidget(this);
   history_lanelet_attributes_table_prt_ = new QTableWidget(this);
   next_lanelet_attributes_table_prt_ = new QTableWidget(this);
-  current_lanelet_label_ptr_ = new QLabel("Current Lanelet");
-  history_lanelet_label_ptr_ = new QLabel("History Lanelet");
-  next_lanelet_label_ptr_ = new QLabel("Next Lanelet");
+
   current_lanelet_ID_label_ptr_ = new QLabel("NULL");
   history_lanelet_ID_label_ptr_ = new QLabel("NULL");
   next_lanelet_ID_label_ptr_ = new QLabel("NULL");
 
   auto laneletInfo_layout = new QVBoxLayout;
-  // auto currentBox = new QGroupBox;
-  // auto historyBox = new QGroupBox;
-  // auto nextBox = new QGroupBox;
-  // currentBox->setLayout(createLaneletDetailsLayout(
-  //   current_lanelet_attributes_table_prt_,
-  //   current_lanelet_label_ptr_,
-  //   current_lanelet_ID_label_ptr_));
-  // historyBox->setLayout(createLaneletDetailsLayout(
-  //   history_lanelet_attributes_table_prt_,
-  //   history_lanelet_label_ptr_,
-  //   history_lanelet_ID_label_ptr_));
-  // nextBox->setLayout(createLaneletDetailsLayout(
-  //   next_lanelet_attributes_table_prt_,
-  //   next_lanelet_label_ptr_,
-  //   next_lanelet_ID_label_ptr_));
-  // auto toolboxfortest = new QToolBox;
-  // toolboxfortest->addItem((QWidget*)currentBox, tr("current lanelet"));
-  // toolboxfortest->addItem((QWidget*)historyBox, tr("history lanelet"));
-  // toolboxfortest->addItem((QWidget*)nextBox, tr("next lanelet"));
-  // laneletInfo_layout->addWidget(toolboxfortest);
 
+// TODO: clean up the code
   current_button_ptr_ = new QPushButton;
-  current_button_ptr_->setText("current lanele");
+  current_button_ptr_->setText("current lanelet");
+  current_button_ptr_->setIcon(dropDownIcon);
+  current_button_ptr_->setStyleSheet("text-align:left;");
   history_button_ptr_ = new QPushButton;
-  history_button_ptr_->setText("history lanele");
+  history_button_ptr_->setText("history lanelet");
+  history_button_ptr_->setIcon(dropDownIcon);
+  history_button_ptr_->setStyleSheet("text-align:left;");
   next_button_ptr_ = new QPushButton;
-  next_button_ptr_->setText("next lanele");
+  next_button_ptr_->setText("next lanelet");
+  next_button_ptr_->setIcon(dropDownIcon);
+  next_button_ptr_->setStyleSheet("text-align:left;");
 
   laneletInfo_layout->addWidget(current_button_ptr_);
   current_Frame_ptr_ = new QFrame;
   current_Frame_ptr_->setLayout(createLaneletDetailsLayout(
     current_lanelet_attributes_table_prt_,
-    current_lanelet_label_ptr_,
     current_lanelet_ID_label_ptr_));
   laneletInfo_layout->addWidget(current_Frame_ptr_);
 
@@ -88,7 +73,6 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   history_Frame_ptr_ = new QFrame;
   history_Frame_ptr_->setLayout(createLaneletDetailsLayout(
     history_lanelet_attributes_table_prt_,
-    history_lanelet_label_ptr_,
     history_lanelet_ID_label_ptr_));
   laneletInfo_layout->addWidget(history_Frame_ptr_);
 
@@ -96,7 +80,6 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   next_Frame_ptr_ = new QFrame;
   next_Frame_ptr_->setLayout(createLaneletDetailsLayout(
     next_lanelet_attributes_table_prt_,
-    next_lanelet_label_ptr_,
     next_lanelet_ID_label_ptr_));
   laneletInfo_layout->addWidget(next_Frame_ptr_);
   laneletInfo_layout->addStretch();
@@ -133,13 +116,11 @@ void ODDPanel::onInitialize()
     "/odd_parameter/teleoperation", rmw_qos_profile_services_default);
 }
 
-QVBoxLayout *ODDPanel::createLaneletDetailsLayout(QTableWidget *table, QLabel *title, QLabel *id){
+QVBoxLayout *ODDPanel::createLaneletDetailsLayout(QTableWidget *table, QLabel *id){
   auto * up_layout = new QVBoxLayout;
-  title->setAlignment(Qt::AlignLeft);
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   table->verticalHeader()->setVisible(false);
-  up_layout->addWidget(title);
   up_layout->addWidget(id);
   up_layout->addWidget(table);
   up_layout->addStretch();
@@ -319,10 +300,12 @@ void ODDPanel::onClickODDTeleoperation()
   void ODDPanel::onClickCurrent(){
     if (!current_btn_on) {
       current_Frame_ptr_->setVisible(false);
+      current_button_ptr_->setIcon(foldIcon);
       current_btn_on = true;
     }
     else {
       current_Frame_ptr_->setVisible(true);
+      current_button_ptr_->setIcon(dropDownIcon);
       current_btn_on = false;
     }
   }
@@ -330,10 +313,12 @@ void ODDPanel::onClickODDTeleoperation()
   void ODDPanel::onClickHistory(){
     if (!history_btn_on) {
       history_Frame_ptr_->setVisible(false);
+      history_button_ptr_->setIcon(foldIcon);
       history_btn_on = true;
     }
     else {
       history_Frame_ptr_->setVisible(true);
+      history_button_ptr_->setIcon(dropDownIcon);
       history_btn_on = false;
     }
   }
@@ -341,10 +326,12 @@ void ODDPanel::onClickODDTeleoperation()
   void ODDPanel::onClickNext(){
     if (!next_btn_on) {
       next_Frame_ptr_->setVisible(false);
+      next_button_ptr_->setIcon(foldIcon);
       next_btn_on = true;
     }
     else {
       next_Frame_ptr_->setVisible(true);
+      next_button_ptr_->setIcon(dropDownIcon);
       next_btn_on = false;
     }
   }
