@@ -52,15 +52,15 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   current_button_ptr_ = new QPushButton;
   current_button_ptr_->setText("current lanelet");
   current_button_ptr_->setIcon(dropDownIcon);
-  current_button_ptr_->setStyleSheet("text-align:left;");
+  current_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
   history_button_ptr_ = new QPushButton;
   history_button_ptr_->setText("history lanelet");
   history_button_ptr_->setIcon(dropDownIcon);
-  history_button_ptr_->setStyleSheet("text-align:left;");
+  history_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
   next_button_ptr_ = new QPushButton;
   next_button_ptr_->setText("next lanelet");
   next_button_ptr_->setIcon(dropDownIcon);
-  next_button_ptr_->setStyleSheet("text-align:left;");
+  next_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
 
   laneletInfo_layout->addWidget(current_button_ptr_);
   current_Frame_ptr_ = new QFrame;
@@ -175,14 +175,14 @@ void ODDPanel::setItemInTable(QTableWidget * table) {
     for (int j = 0; j < table->columnCount(); ++j) {
       int index = i * table->columnCount() + j;
       if (index < static_cast<int>(attrVec.size()))
-        table->setCellWidget(i, j, setTableItemFromAttr(attrVec[index]));
+        table->setCellWidget(i, j, setTableItemFromAttr(attrVec[index], attrVec[index]));
       else
         break;
     }
   }
 }
 
-QWidget * ODDPanel::setTableItemFromAttr(const QString &attr){
+QWidget * ODDPanel::setTableItemFromAttr(const QString &attr, const QString &description){
   QIcon ODDIcon(path_to_current_folder + "/images/" + attr + ".png");
   QWidget * tableItem = new QWidget();
   QLabel *iconLabel = new QLabel();
@@ -195,11 +195,11 @@ QWidget * ODDPanel::setTableItemFromAttr(const QString &attr){
   QVBoxLayout *itemLayout = new QVBoxLayout;
   itemLayout->setAlignment(Qt::AlignCenter);
   itemLayout->addLayout(iconLayout);
-  itemLayout->addWidget(new QLabel(attr));
+  itemLayout->addWidget(new QLabel(description));
   tableItem->setLayout(itemLayout);
   tableItem->setStyleSheet("border:0px;");
   tableItem->setMouseTracking(true);
-  tableItem->setToolTip(attr);
+  tableItem->setToolTip(description);
   // auto iconItem = new QTableWidgetItem;
   // iconItem->setSizeHint(QSize(32,32));
   // iconItem->setTextAlignment(Qt::AlignCenter);
@@ -222,10 +222,13 @@ void ODDPanel::updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, Q
         }
         if (countAttr < laneletInfo.attributes.size()){
           QString iconValue = QString::fromStdString(laneletInfo.attributes[countAttr++].strValue);
-          if (iconValue == "yes") iconValue = "one way";
-          if (iconValue == "no") iconValue = "two way";
-          if (iconValue == "30") iconValue = "speed limit";
-          table->setCellWidget(i, j, setTableItemFromAttr(iconValue));
+          QString iconDescrption = iconValue;
+          if (iconValue == "yes") {iconValue = "one way"; iconDescrption = "one way";}
+          if (iconValue == "no") {iconValue = "two way"; iconDescrption = "two way";}
+          if (iconValue == "30") {iconValue = "speed limit"; iconDescrption = "speed limit 30 km/h";}
+          if (iconValue == "8") {iconValue = "speed limit"; iconDescrption = "speed limit 8 km/h";}
+          if (iconValue == "private") {iconValue = "private"; iconDescrption = "Parking lot around";}
+          table->setCellWidget(i, j, setTableItemFromAttr(iconValue, iconDescrption));
         } // if attribut is supported
       }// loop not exceed the size of lanelet attributes
     }
@@ -298,16 +301,18 @@ void ODDPanel::onClickODDTeleoperation()
   });  
 
 }
-
+// clean up the code and merge the following three slot functions into one.
   void ODDPanel::onClickCurrent(){
     if (!current_btn_on) {
       current_Frame_ptr_->setVisible(false);
       current_button_ptr_->setIcon(foldIcon);
+      current_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
       current_btn_on = true;
     }
     else {
       current_Frame_ptr_->setVisible(true);
       current_button_ptr_->setIcon(dropDownIcon);
+      current_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
       current_btn_on = false;
     }
   }
@@ -316,11 +321,13 @@ void ODDPanel::onClickODDTeleoperation()
     if (!history_btn_on) {
       history_Frame_ptr_->setVisible(false);
       history_button_ptr_->setIcon(foldIcon);
+      history_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
       history_btn_on = true;
     }
     else {
       history_Frame_ptr_->setVisible(true);
       history_button_ptr_->setIcon(dropDownIcon);
+      history_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
       history_btn_on = false;
     }
   }
@@ -329,11 +336,13 @@ void ODDPanel::onClickODDTeleoperation()
     if (!next_btn_on) {
       next_Frame_ptr_->setVisible(false);
       next_button_ptr_->setIcon(foldIcon);
+      next_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
       next_btn_on = true;
     }
     else {
       next_Frame_ptr_->setVisible(true);
       next_button_ptr_->setIcon(dropDownIcon);
+      next_button_ptr_->setStyleSheet("text-align:left; background-color: grey;");
       next_btn_on = false;
     }
   }

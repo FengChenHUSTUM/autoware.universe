@@ -1,7 +1,7 @@
 #ifndef ODD_VISUALIZER_UTILS_HPP_
 #define ODD_VISUALIZER_UTILS_HPP_
 
-
+#include <fstream>
 #include <vector>
 // Lanelet
 #include <lanelet2_io/Io.h>
@@ -190,6 +190,8 @@ namespace odd_tools
      * @return std::vector<geometry_msgs::msg::Point> 
      */
     std::vector<geometry_msgs::msg::Point> getArrowsInOneLanelet(const std::vector<geometry_msgs::msg::Pose> & centerLine);
+
+    void writeAvailableInfoFromMap(const lanelet::LaneletMapPtr lanelet_map_ptr_);
 } // namespace odd_tools
 
 #endif

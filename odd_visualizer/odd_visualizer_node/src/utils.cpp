@@ -508,4 +508,66 @@ namespace odd_tools
         }
         return arrows;
     }
+void writeAvailableInfoFromMap(const lanelet::LaneletMapPtr lanelet_map_ptr_){
+  /* Attributes that might be taken use of:
+  1. in lineStringLayer. 
+    a. type == pedestrian_marking
+    b. traffic light. The traffic light in autoware map is composite of Linestrings in 3D space
+      e.g. query line id with 349 can return a linestring with traffic light id 350, the type of 
+      which is light_bulbs. subtype of a traffic light could be one of the following: "red"(green
+      or yellow, or red_yellow_green). The traffic light line string may also contain the attribute "height".
+    c. type == stop_line
+    d. type == parking_space width == 3
+    e. type == road_border
+    f. type == traffic_sign and subtype == stop_sign. e.g. Line 9382 
+
+  2. in polygonLayer.
+    a. polygons 9317. area: yes; type: parking_lot
+    b. polygons 9835. area: yes; type: detection_area
+
+  3. in regulatoryElementLayer.
+    a. type == regulatory_element. subtype could be "road_marking", "traffic_sign", "traffic_light"
+  */
+  if (lanelet_map_ptr_) {
+    std::ofstream infoFile;
+    infoFile.open("InfosAvail.txt");
+    for (auto area : lanelet_map_ptr_->areaLayer) {
+      int64_t id = area.id();
+      infoFile << "Area " << id << ": \n";
+      for (auto attr : area.attributes()){
+        infoFile << "\t"<< attr.first << "\t" << attr.second << "\n";
+      }
+    }
+    for (auto line : lanelet_map_ptr_->lineStringLayer) {
+      int64_t id = line.id();
+      infoFile << "Line " << id << ": \n";
+      for (auto attr : line.attributes()){
+        infoFile << "\t"<< attr.first << "\t" << attr.second << "\n";
+      }
+    }
+
+    for (auto line : lanelet_map_ptr_->polygonLayer) {
+      int64_t id = line.id();
+      infoFile << "polygons " << id << ": \n";
+      for (auto attr : line.attributes()){
+        infoFile << "\t"<< attr.first << "\t" << attr.second << "\n";
+      }
+    }
+
+    for (auto line : lanelet_map_ptr_->regulatoryElementLayer) {
+      auto regl = line.get();
+      int64_t id = regl->id();
+      
+      infoFile << "regulations " << id << ": \n";
+      for (auto attr : regl->attributes()){
+        infoFile << "\t"<< attr.first << "\t" << attr.second << "\n";
+      }
+    }
+    infoFile.close();
+  }
+  else return;
+}
+
+
+
 } // namespace odd_tools

@@ -94,6 +94,7 @@ void OddVisualizer::mapCallback(
     lanelet::utils::conversion::fromBinMsg(
         *msg, lanelet_map_ptr_, &traffic_rules_ptr_, &routing_graph_ptr_);
     lanelet::ConstLanelets all_lanelets_ = lanelet::utils::query::laneletLayer(lanelet_map_ptr_);
+    odd_tools::writeAvailableInfoFromMap(lanelet_map_ptr_);
 }
 
 void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr msg) {

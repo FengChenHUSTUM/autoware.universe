@@ -115,7 +115,7 @@ protected:
   
   QFrame *createLaneletIconFrame(QLabel *laneletTitle, QTableWidget *laneletTable);
   QVBoxLayout *createLaneletDetailsLayout(QTableWidget *table, QLabel *id);
-  QWidget *setTableItemFromAttr(const QString &attr);
+  QWidget *setTableItemFromAttr(const QString &attr, const QString &description);
   void updateDetails(const scenery_msgs::msg::laneletODD &laneletInfo, QTableWidget *table);
 };
 
