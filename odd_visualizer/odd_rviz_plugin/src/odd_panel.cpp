@@ -98,16 +98,23 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   teleoperation_button_ptr_->setStyleSheet("background-color: rgb(106, 117, 126)");
   connect(teleoperation_button_ptr_, SIGNAL(clicked()), SLOT(onClickODDTeleoperation()));
 
+  // initialize button
+  set_initial_pose_ptr_ = new QPushButton("Initialize");
+  connect(set_initial_pose_ptr_, SIGNAL(clicked()), SLOT(onClickInitialize()));
+
   // Layout
   auto * v_layout = new QVBoxLayout;
   v_layout->addWidget(ODDTab_prt_);
   v_layout->addWidget(teleoperation_button_ptr_);
+  v_layout->addWidget(set_initial_pose_ptr_);
   setLayout(v_layout);
 }
 
 void ODDPanel::onInitialize()
 {
   raw_node_ = this->getDisplayContext()->getRosNodeAbstraction().lock()->get_raw_node();
+
+  initialize_pose_publisher_ = raw_node_->create_publisher<PoseWithCovarianceStamped>("/initialpose", 1);
 
   sub_odd_elements_ = raw_node_->create_subscription<scenery_msgs::msg::ODDElements>(
     "/odd_parameter/odd_elements", 10, std::bind(&ODDPanel::onODDSub, this, _1));
@@ -301,6 +308,31 @@ void ODDPanel::onClickODDTeleoperation()
   });  
 
 }
+  
+void ODDPanel::onClickInitialize() {
+  PoseWithCovarianceStamped dummyPose;
+  dummyPose.header.frame_id = "map";
+  dummyPose.pose.pose.position.x = 3731.73;
+  dummyPose.pose.pose.position.y = 73725.0;
+  dummyPose.pose.pose.position.z = 19.3395;
+  dummyPose.pose.pose.orientation.x = 0.00000;
+  dummyPose.pose.pose.orientation.y = 0.00000;
+  dummyPose.pose.pose.orientation.z = -0.961355;
+  dummyPose.pose.pose.orientation.w = 0.275311;
+  dummyPose.pose.covariance =
+  {4.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000,
+   0.00000, 4.00000, 0.00000, 0.00000, 0.00000, 0.00000, 
+   0.00000, 0.00000, 0.0100000, 0.00000, 0.00000, 0.00000, 
+   0.00000, 0.00000, 0.00000, 0.0100000, 0.00000, 0.00000, 
+   0.00000, 0.00000, 0.00000, 0.00000, 0.0100000, 0.00000, 
+   0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 1.00000};
+  initialize_pose_publisher_->publish(dummyPose);
+  while (initialize_pose_publisher_->get_subscription_count() == 0) {
+    sleep(10);
+  }
+  return;
+}
+
 // clean up the code and merge the following three slot functions into one.
   void ODDPanel::onClickCurrent(){
     if (!current_btn_on) {

@@ -22,6 +22,8 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rviz_common/display_context.hpp>
 
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+
 #include <scenery_msgs/msg/odd_elements.hpp>
 #include <scenery_msgs/msg/tele_state.hpp>
 #include <scenery_msgs/srv/teleoperation.hpp>
@@ -29,6 +31,8 @@
 #include <memory>
 #include <string>
 using scenery_msgs::srv::Teleoperation;
+
+using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
 
 
 /* TODO: populate the panel function
@@ -62,6 +66,7 @@ public Q_SLOTS:  // NOLINT for Qt
   void onClickCurrent();
   void onClickHistory();
   void onClickNext();
+  void onClickInitialize();
 
 protected:
   void onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg);
@@ -69,6 +74,7 @@ protected:
   rclcpp::Node::SharedPtr raw_node_;
   rclcpp::Subscription<scenery_msgs::msg::ODDElements>::SharedPtr sub_odd_elements_;
   rclcpp::Client<scenery_msgs::srv::Teleoperation>::SharedPtr client_teleoperation_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr initialize_pose_publisher_;
 
   // rclcpp::Publisher<tier4_planning_msgs::msg::VelocityLimit>::SharedPtr pub_velocity_limit_;
 
@@ -109,6 +115,8 @@ protected:
 
   QPushButton * teleoperation_button_ptr_;
   bool teleoperation_button_on{false};
+
+  QPushButton * set_initial_pose_ptr_;
 
   void setIconTableStyle(QTableWidget * table);
   void setItemInTable(QTableWidget * table);
