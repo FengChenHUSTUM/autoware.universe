@@ -98,15 +98,23 @@ ODDPanel::ODDPanel(QWidget * parent) : rviz_common::Panel(parent)
   teleoperation_button_ptr_->setStyleSheet("background-color: rgb(106, 117, 126)");
   connect(teleoperation_button_ptr_, SIGNAL(clicked()), SLOT(onClickODDTeleoperation()));
 
+  auto dummy_points_layout = new QHBoxLayout;
   // initialize button
   set_initial_pose_ptr_ = new QPushButton("Initialize");
   connect(set_initial_pose_ptr_, SIGNAL(clicked()), SLOT(onClickInitialize()));
+
+  // set goal button
+  set_goal_ptr_ = new QPushButton("Set Goal");
+  connect(set_goal_ptr_, SIGNAL(clicked()), SLOT(onClickSetGoal()));
+
+  dummy_points_layout->addWidget(set_initial_pose_ptr_);
+  dummy_points_layout->addWidget(set_goal_ptr_);
 
   // Layout
   auto * v_layout = new QVBoxLayout;
   v_layout->addWidget(ODDTab_prt_);
   v_layout->addWidget(teleoperation_button_ptr_);
-  v_layout->addWidget(set_initial_pose_ptr_);
+  v_layout->addLayout(dummy_points_layout);
   setLayout(v_layout);
 }
 
@@ -115,6 +123,7 @@ void ODDPanel::onInitialize()
   raw_node_ = this->getDisplayContext()->getRosNodeAbstraction().lock()->get_raw_node();
 
   initialize_pose_publisher_ = raw_node_->create_publisher<PoseWithCovarianceStamped>("/initialpose", 1);
+  set_goal_publisher_ = raw_node_->create_publisher<PoseStamped>("/planning/mission_planning/goal", 1);
 
   sub_odd_elements_ = raw_node_->create_subscription<scenery_msgs::msg::ODDElements>(
     "/odd_parameter/odd_elements", 10, std::bind(&ODDPanel::onODDSub, this, _1));
@@ -330,6 +339,20 @@ void ODDPanel::onClickInitialize() {
   while (initialize_pose_publisher_->get_subscription_count() == 0) {
     sleep(10);
   }
+  return;
+}
+
+void ODDPanel::onClickSetGoal() {
+  PoseStamped dummyGoal;
+  dummyGoal.header.frame_id = "map";
+  dummyGoal.pose.position.x = 3720.060;
+  dummyGoal.pose.position.y = 73687.969;
+  dummyGoal.pose.position.z = 0.0;
+  dummyGoal.pose.orientation.x = 0.0;
+  dummyGoal.pose.orientation.y = 0.0;
+  dummyGoal.pose.orientation.z = -0.574236;
+  dummyGoal.pose.orientation.w = 0.818690;
+  set_goal_publisher_->publish(dummyGoal);
   return;
 }
 

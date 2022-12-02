@@ -33,7 +33,7 @@
 using scenery_msgs::srv::Teleoperation;
 
 using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
-
+using PoseStamped = geometry_msgs::msg::PoseStamped;
 
 /* TODO: populate the panel function
 Attributes that are available in the sample map from AW tutorial 
@@ -66,7 +66,9 @@ public Q_SLOTS:  // NOLINT for Qt
   void onClickCurrent();
   void onClickHistory();
   void onClickNext();
+
   void onClickInitialize();
+  void onClickSetGoal();
 
 protected:
   void onODDSub(const scenery_msgs::msg::ODDElements::ConstSharedPtr msg);
@@ -75,6 +77,7 @@ protected:
   rclcpp::Subscription<scenery_msgs::msg::ODDElements>::SharedPtr sub_odd_elements_;
   rclcpp::Client<scenery_msgs::srv::Teleoperation>::SharedPtr client_teleoperation_;
   rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr initialize_pose_publisher_;
+  rclcpp::Publisher<PoseStamped>::SharedPtr set_goal_publisher_;
 
   // rclcpp::Publisher<tier4_planning_msgs::msg::VelocityLimit>::SharedPtr pub_velocity_limit_;
 
@@ -117,6 +120,7 @@ protected:
   bool teleoperation_button_on{false};
 
   QPushButton * set_initial_pose_ptr_;
+  QPushButton * set_goal_ptr_;
 
   void setIconTableStyle(QTableWidget * table);
   void setItemInTable(QTableWidget * table);
