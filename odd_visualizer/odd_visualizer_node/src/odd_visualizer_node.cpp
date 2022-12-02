@@ -134,7 +134,6 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
     odd_speed_limit_publisher_->publish(speedLimitMSG);
 
     // TODO: merge the panel publisher into a separate function
-    // TODO: debug here
     scenery_msgs::msg::ODDElements oddMSG;
     oddMSG.laneletInfo.resize(3);
     if (curIndex > 0) {
@@ -149,7 +148,18 @@ void OddVisualizer::laneletSequenceCallback(laneSequenceWithID::ConstSharedPtr m
               laneletAttr.strValue = attr.second.value();
               oddMSG.laneletInfo[i].attributes.push_back(laneletAttr);
           }
-          // std::cout <<"lane index: " << llIndex <<'\n';
+          // TODO: 
+          // Additonal information should be added to current ODD panel:
+          // regulatory elements: replace type and subtype with more proprivate names
+          // the type and subtype of the lanelet should also be replaced
+          for (auto rule : current_lanelets_[llIndex].regulatoryElements()) {
+            for (auto attr : rule->attributes()) {
+              scenery_msgs::msg::attributePrim ruleElement;
+              ruleElement.attributeName = attr.first;
+              ruleElement.strValue = attr.second.value();
+              oddMSG.laneletInfo[i].attributes.push_back(ruleElement);
+            }
+          }
           llIndex++;
         }
       }
