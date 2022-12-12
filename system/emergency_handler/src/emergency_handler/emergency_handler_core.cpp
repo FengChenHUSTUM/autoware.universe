@@ -24,7 +24,7 @@ EmergencyHandler::EmergencyHandler() : Node("emergency_handler")
   param_.update_rate = declare_parameter<int>("update_rate", 10);
   param_.timeout_hazard_status = declare_parameter<double>("timeout_hazard_status", 0.5);
   param_.timeout_takeover_request = declare_parameter<double>("timeout_takeover_request", 10.0);
-  param_.use_takeover_request = declare_parameter<bool>("use_takeover_request", false);
+  param_.use_takeover_request = declare_parameter<bool>("use_takeover_request", true);
   param_.use_parking_after_stopped = declare_parameter<bool>("use_parking_after_stopped", false);
   param_.turning_hazard_on.emergency = declare_parameter<bool>("turning_hazard_on.emergency", true);
 

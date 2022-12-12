@@ -1,6 +1,7 @@
 #include "tele_state_machine.hpp"
 
 void TeleStateMachine::checkAndSetCurrentState(const EmergencyState::ConstSharedPtr msg) {
+    std::cout << "emergency state: " << msg->state << '\n';
     if (isDriving() && msg->state == EmergencyState::OVERRIDE_REQUESTING) {
         setCurrentState(TeleState::RequestingForTakingOver);
     }

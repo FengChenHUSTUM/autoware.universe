@@ -34,6 +34,7 @@
   <depend>route_handler</depend>
   <depend>motion_utils</depend>
   <depend>autoware_auto_system_msgs</depend>
+  <depend>tier4_external_api_msgs</depend>
 
   <test_depend>ament_cmake_ros</test_depend>
 

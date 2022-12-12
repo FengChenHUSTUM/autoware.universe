@@ -299,8 +299,9 @@ void ODDPanel::onClickODDTeleoperation()
   auto req = std::make_shared<Teleoperation::Request>();
   req->teleoperation_status = teleoperation_button_on;
   client_teleoperation_->async_send_request(req, [this](rclcpp::Client<Teleoperation>::SharedFuture response) {
-    if (response.get()->teleoperation_ready == 1
-        && teleoperation_button_on == false) {
+    // if (response.get()->teleoperation_ready == 1
+    //     && teleoperation_button_on == false) {
+    if (teleoperation_button_on == false) {
       teleoperation_button_ptr_->setStyleSheet("background-color: rgb(159, 186, 54)");
       teleoperation_button_on = true;
     }
@@ -309,10 +310,14 @@ void ODDPanel::onClickODDTeleoperation()
       teleoperation_button_ptr_->setStyleSheet("background-color: rgb(106, 117, 126)");
       teleoperation_button_on = false;
     }
+    // else {
+    //   teleoperation_button_on = false;
+    //   teleoperation_button_ptr_->setStyleSheet("background-color: rgb(217, 81, 23)");
+    //   RCLCPP_INFO(raw_node_->get_logger(), "teleoperation not allowed!");
+    // }
     else {
       teleoperation_button_on = false;
-      teleoperation_button_ptr_->setStyleSheet("background-color: rgb(217, 81, 23)");
-      RCLCPP_INFO(raw_node_->get_logger(), "teleoperation not allowed!");
+      teleoperation_button_ptr_->setStyleSheet("background-color: rgb(106, 117, 126)");
     }
   });  
 

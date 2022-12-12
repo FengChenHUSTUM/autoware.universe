@@ -39,6 +39,9 @@ OddVisualizer::OddVisualizer(
     hazard_state_subscriber_ = this->create_subscription<HazardStatus>(
       "/system/emergency/hazard_status", 1, std::bind(&OddVisualizer::HazardStatusCallback, this, std::placeholders::_1));
 
+    engage_state_subscriber_ = this->create_subscription<EngageStatus>(
+    "/api/external/get/engage", 1, std::bind(&OddVisualizer::EngageStatusCallback, this, std::placeholders::_1));
+
     // services
       odd_teleoperation_service_ = create_service<scenery_msgs::srv::Teleoperation>(
     "/odd_parameter/teleoperation", std::bind(&OddVisualizer::onTeleoperationService, this, 
@@ -489,6 +492,13 @@ void OddVisualizer::HazardStatusCallback(const HazardStatus::ConstSharedPtr msg)
     // merge into taking over request condition determination 
     std::cout << "emergency state!";
   }  
+}
+
+void OddVisualizer::EngageStatusCallback(const EngageStatus::ConstSharedPtr msg) {
+  if (!engage_status && msg->engage) {
+    engage_time_ = this->get_clock()->now();
+    engage_status = true;
+  }
 }
 
 

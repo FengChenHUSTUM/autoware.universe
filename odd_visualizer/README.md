@@ -34,7 +34,7 @@ ODDPparameter
 ```
 ## Modification of packages in Autoware
 1. set "use_takeover_request" to true
-    > file location: [emergency_handler.param.yaml](../system/emergency_handler/config/emergency_handler.param.yaml#L8)
+    > file location: [emergency_handler.param.yaml](../system/emergency_handler/config/emergency_handler.param.yaml#L8) 
     > **Note**: In case .yaml file doesn't work, modify the corresponding ros parameter directly [here](../system/emergency_handler/src/emergency_handler/emergency_handler_core.cpp#L27)
 2. 
 

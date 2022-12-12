@@ -37,6 +37,8 @@
 #include <autoware_auto_vehicle_msgs/msg/gear_command.hpp>
 #include <autoware_auto_vehicle_msgs/msg/hazard_lights_command.hpp>
 
+#include <tier4_external_api_msgs/msg/engage_status.hpp>
+
 // #include <tier4_autoware_utils/ros/self_pose_listener.hpp>
 
 // Lanelet
@@ -67,6 +69,7 @@ using tier4_autoware_utils::createMarkerColor;
 using tier4_autoware_utils::createMarkerOrientation;
 using tier4_autoware_utils::createMarkerScale;
 using tier4_autoware_utils::createPoint;
+using tier4_external_api_msgs::msg::EngageStatus;
 using visualization_msgs::msg::Marker;
 using geometry_msgs::msg::Point;
 using scenery_msgs::msg::laneSequenceWithID;
@@ -92,6 +95,7 @@ private:
     rclcpp::Subscription<EmergencyState>::SharedPtr emergency_state_subscriber_;
     rclcpp::Subscription<AutowareState>::SharedPtr autoware_state_subscriber_;
     rclcpp::Subscription<HazardStatus>::SharedPtr hazard_state_subscriber_;
+    rclcpp::Subscription<EngageStatus>::SharedPtr engage_state_subscriber_;
     
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_driveable_area_publisher_;
     rclcpp::Publisher<MarkerArray>::SharedPtr odd_adjacent_lane_publisher_;
@@ -125,6 +129,8 @@ private:
     std::mutex lock_state_machine_;
     // teleoperation service: "0" for off; "1" for on
     uint8_t teleoperation_status{0};
+    rclcpp::Time engage_time_;
+    bool engage_status{false};
 
 
     /**
@@ -149,7 +155,7 @@ private:
     void EmergencyStateCallback(const EmergencyState::ConstSharedPtr msg);
     void AutowareStateCallback(const AutowareState::ConstSharedPtr msg);
     void HazardStatusCallback(const HazardStatus::ConstSharedPtr msg);
-
+    void EngageStatusCallback(const EngageStatus::ConstSharedPtr msg);
 
     void creareDrivableBoundaryMarkerArray(const lanelet::ConstLanelets laneletSequence);
 
